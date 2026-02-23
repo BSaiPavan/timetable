@@ -1,0 +1,72 @@
+
+========== Class 0 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday    Manoj Kavita Kavita Sanjay  Manoj  Anil  
+Tuesday   Aditi  Manoj   f1    Anil    f1     f1   
+Wednesday Aditi Sanjay   f1   Kavita  Aditi Sanjay 
+Thursday  foyer   f1   Kavita  Pooja  Aditi   f1   
+Friday     f1   Kavita  Anil   Pooja  Pooja   f1   
+Saturday   iic    iic   Aditi  Pooja  Anil   Manoj 
+
+========== Class 1 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday   Sanjay  Pooja   f2     f2    Anil  Kavita 
+Tuesday   Pooja   f2     f2   Kavita Kavita Sanjay 
+Wednesday Anil   Manoj  Anil  Sanjay  Pooja  Pooja 
+Thursday  foyer  Manoj  Aditi Kavita Sanjay  Aditi 
+Friday   Sanjay  Aditi  Aditi  Anil   Aditi   f2   
+Saturday   iic    iic    f2    Manoj  Manoj  Anil  
+
+========== Class 2 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday    Rahul   f3    Anil   Rahul  Rohit  Rahul 
+Tuesday    f3    Rohit  Rohit   f3    Rohit  Rahul 
+WednesdayVikram Rajesh  Priya  Rohit  Anil  Rajesh 
+Thursday  foyer Vikram   f3   Rajesh Vikram  Priya 
+Friday     f3    Priya Vikram  Rahul  Anil  Rajesh 
+Saturday   iic    iic  Vikram  Priya Rajesh  Priya 
+
+========== Class 3 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday    Anil   Rohit  Ritu   Rohit  Rahul  Priya 
+Tuesday    f4    Priya  Pooja  Pooja  Anil   Pooja 
+Wednesday Ritu   Anil   Rahul  Rahul  Rohit  Priya 
+Thursday  foyer  Anil    f4    Anil    f4    Pooja 
+Friday    Priya  Pooja  Ritu   Rohit  Rahul   f4   
+Saturday   iic    iic   Ritu    f4    Priya   f4   
+
+========== Class 4 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday   Kavita   f5   Sanjay  Sneha Sanjay   f5   
+Tuesday   Rahul   f5    Sneha Sanjay  Rahul Kavita 
+Wednesday Rahul  Priya Sanjay  Sneha Kavita  Sneha 
+Thursday  foyer  Priya  Priya  Priya Kavita  Nisha 
+Friday    Nisha   f5    Rahul  Nisha  Priya  Nisha 
+Saturday   iic    iic    f5   Kavita  Nisha Sanjay 
+
+========== Class 5 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday    Priya  Rahul  Priya  Priya Rajesh   f6   
+Tuesday  Kavita Sanjay Sanjay  Sneha Rajesh Rajesh 
+Wednesday Sneha Kavita   f6    Ritu   Rahul  Rahul 
+Thursday  foyer  Sneha  Ritu  Sanjay  Priya Kavita 
+Friday   Kavita   f6    Priya  Ritu    f6     f6   
+Saturday   iic    iic  Kavita  Ritu   Sneha  Ritu  
+
+========== Class 6 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday    Rohit  Priya Vikram Vikram  Sneha  Sneha 
+Tuesday  Vikram   f7   Vikram  Priya   f7    Nisha 
+Wednesday  f7    Rohit  Sneha  Priya  Priya  Nisha 
+Thursday  foyer  Rohit  Nisha  Sneha  Nisha Rajesh 
+Friday   Vikram  Rohit  Rohit Rajesh Rajesh  Priya 
+Saturday   iic    iic    f7    Nisha   f7    Sneha 
+
+========== Class 7 ==========
+        P  1   P  2   P  3   P  4   P  5   P  6   
+Monday    Richa Vikram  Rohit  Richa   f8    Rohit 
+Tuesday   Sneha   f8    Rahul Vikram   f8    Rohit 
+Wednesday Richa   f8   Sameer Sameer Sameer  Richa 
+Thursday  foyer Sameer Rajesh  Richa Rajesh Sameer 
+Friday    Rohit Vikram   f8    Sneha Vikram  Rahul 
+Saturday   iic    iic   Rahul  Rohit Vikram Rajesh 

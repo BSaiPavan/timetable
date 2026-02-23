@@ -88,7 +88,7 @@ boolean bsafe(int n, Node block) {
                  if(solve())
                         return true;
                  }
-                 box[n.x][n.y]=0;
+              box[n.x][n.y]=0;
     
               }
           return false;
