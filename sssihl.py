@@ -9,7 +9,7 @@ sys.stdout = log_file
 
 # ---------------- BASIC CONFIG ----------------
 
-No_of_classes = 8  #9           # Total number of classes
+No_of_classes = 5  #9           # Total number of classes
 No_of_days_in_week = 6         # Working days (Mon–Sat)
 No_of_periods = 6              # Periods per day
 
@@ -40,7 +40,7 @@ for i in range(len(Timetable[0])):
 
 #----------------------------------------------------
 
-                        #teachers list
+'''                        #teachers list
 teacher_list = {
     0:  {"Name": "Akshath",  "available": True},
     1:  {"Name": "pavan", "available": True},
@@ -70,7 +70,28 @@ teacher_list = {
     24: {"Name": "f8", "available": True},
     #25: {"Name": "f9", "available": True}
 }
+'''
+teacher_list = {
+    0: {"Name": "S1", "available": True},
+    1: {"Name": "S2", "available": True},
+    2: {"Name": "S3", "available": True},
+    3: {"Name": "S4", "available": True},
+    4: {"Name": "S5", "available": True},
+    5: {"Name": "S6", "available": True},
+    6: {"Name": "S7", "available": True},
+    7: {"Name": "S8", "available": True},
+    8: {"Name": "S9", "available": True},
+    9: {"Name": "S10", "available": True},
+    10: {"Name": "S11", "available": True},
+    11: {"Name": "S12", "available": True},
 
+    # Free periods
+    12: {"Name": "f1", "available": True},
+    13: {"Name": "f2", "available": True},
+    14: {"Name": "f3", "available": True},
+    15: {"Name": "f4", "available": True},
+    16: {"Name": "f5", "available": True}
+}
 # Create availability table for each time slot
 # main_teacher_list[x] → availability of all teachers in period x
 main_teacher_list = [
@@ -85,6 +106,7 @@ No_of_teachers = len(teacher_list)  # Total teachers including free placeholders
 
 # Format:
 # class_index → {teacher_index: weekly_required_periods}
+'''
 class_teacher_periods = {
     0: {0:5, 1:3, 2:5, 3:5, 4:4, 5:4},
     1: {0:5, 1:2, 2:5, 3:5, 4:4, 5:4},
@@ -96,13 +118,84 @@ class_teacher_periods = {
     7: {16:5, 7:5, 15:5, 13:5, 14:5, 8:3, 9:3},
     #8: {11:3,15:3}
 }
+'''
+class_teacher_periods = {
+
+    # I Year
+    0: {
+        5: 3,   # General English (S6)
+        6: 3,   # II Language (S7)
+        1: 4,   # Problem Solving with Computers (S2)
+        4: 4,   # Calculus (S5)
+        2: 2,   # Software Lab Python – theory part (S3)
+        7: 2,   # Awareness (S8)
+        8: 3,   # Multidisciplinary Course (S9)
+    },
+
+    # II Year
+    1: {
+        5: 3,   # General English (S6)
+        8: 4,   # Computer Organization (S9)
+        3: 4,   # Discrete Mathematics (S4)
+        4: 4,   # Statistics for Data Science (S5)
+        6: 2,   # Awareness (S7)
+        8: 2,   # Multidisciplinary Course (S9)
+    },
+
+    # III Year
+    2: {
+        3: 4,   # Operating Systems (S4)
+        9: 4,   # Computer Networks (S10)
+        4: 5,   # Optimization for ML (S5)
+        2: 5,   # Data Mining & ML (S3)
+        6: 2,   # Awareness (S7)
+    },
+
+    # IV Year
+    3: {
+        11: 4,  # Linux System Programming (S12)
+        3: 4,   # Elective II (S4)
+        10: 4,  # Elective III (S11)
+        9: 2,   # Research Methodology (S10)
+        0: 4,   # Cloud Computing (S1)
+        7: 2,   # Awareness (S8)
+    },
+
+    # V Year
+    4: {
+        4: 5,   # Stochastic Processes (S5)
+        2: 5,   # Deep Learning (S3)
+        1: 5,   # NLP (S2)
+        0: 5,   # Cloud Computing (S1)
+        7: 2,   # Awareness (S8)
+    },
+}
+'''
 lab_teacher_periods={
 #class:{teacher number:[how many labs in that week,how many continuous,lab_number]
     1: {1:[2,2,1]}, 
     5: {5:[3,2,2]}, 
     2: {2:[2,1,1]}
 }
+'''
+lab_teacher_periods = {
 
+    # I Year
+    0: {
+        1: [3, 2, 1],   # Software Lab in C – Part I (S2) → 6 continuous hours
+        2: [2, 2, 1],   # Python Lab – I (S3)
+    },
+
+    # II Year
+    1: {
+        9: [2, 2, 1],   # Data Visualization Lab (S10)
+    },
+
+    # III Year
+    2: {
+        10: [3, 2, 2],  # Java Lab (S11)
+    },
+}
 def assign_lab_periods_randomly():
     """
     Randomly assign lab periods for each class as per the lab_teacher_periods configuration.
@@ -146,7 +239,7 @@ def assign_lab_periods_randomly():
                 if periods_assigned == total_sessions:
                     break
 
-                
+
 total_lab_periods = sum(
     block_info[1] * block_info[2] 
     for class_periods in lab_teacher_periods.values() 
@@ -183,7 +276,8 @@ for class_idx in range(No_of_classes):
     free_count = total_periods - total_assigned_periods
 
     # Assign free periods to the class
-    free_teacher_index = FREE_TEACHERS[class_idx]
+    #free_teacher_index = FREE_TEACHERS[class_idx]
+    free_teacher_index = FREE_TEACHERS[class_idx % len(FREE_TEACHERS)]
     teacher_part[free_teacher_index] = free_count
 
     # Priority list controls teacher trial order
@@ -229,7 +323,7 @@ def print_timetable_classwise(Timetable):
                 teacher = Timetable[row][cls]
 
                 # display cleanup
-                if isinstance(teacher, str) and teacher.startswith("f"):
+                if teacher in [info["Name"] for info in teacher_list.values() if info["Name"].startswith("f")]:
                     teacher = "free"
 
                 print(f"{teacher:^7}", end="")
@@ -240,7 +334,8 @@ def print_timetable_classwise(Timetable):
 def reset_labs():
     for x in range(total_periods):
         for y in range(No_of_classes):
-            if Timetable[x][y] in [teacher_list[t]["Name"] for t in lab_teacher_periods.get(y, {})]:
+            #if Timetable[x][y] in [teacher_list[t]["Name"] for t in lab_teacher_periods.get(y, {})]:
+            if isinstance(Timetable[x][y], str) and "(lab)" in Timetable[x][y]:
                 Timetable[x][y] = 0
     for x in range(total_periods):
         for class_idx, teachers in lab_teacher_periods.items():
@@ -275,7 +370,8 @@ def find_empty(Timetable, class_to_teacher, Tl):
 
 
             if teacher_count == 0:  # if no teacher is available... wither busy with that class or all credits over
-                return x, y
+                continue
+                #return x, y
 
             # Select slot with smallest domain
             if (

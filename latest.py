@@ -9,7 +9,7 @@ sys.stdout = log_file
 
 # ---------------- BASIC CONFIG ----------------
 
-No_of_classes = 8              # Total number of classes
+No_of_classes = 8  #9           # Total number of classes
 No_of_days_in_week = 6         # Working days (Mon–Sat)
 No_of_periods = 6              # Periods per day
 
@@ -42,12 +42,12 @@ for i in range(len(Timetable[0])):
 
                         #teachers list
 teacher_list = {
-    0:  {"Name": "Aditi",  "available": True},
-    1:  {"Name": "Sanjay", "available": True},
-    2:  {"Name": "Kavita", "available": True},
-    3:  {"Name": "Anil",   "available": True},
-    4:  {"Name": "Pooja",  "available": True},
-    5:  {"Name": "Manoj",  "available": True},
+    0:  {"Name": "Akshath",  "available": True},
+    1:  {"Name": "pavan", "available": True},
+    2:  {"Name": "rajesh", "available": True},
+    3:  {"Name": "vardhan",   "available": True},
+    4:  {"Name": "sathwik",  "available": True},
+    5:  {"Name": "badhri",  "available": True},
     6:  {"Name": "Priya",  "available": True},
     7:  {"Name": "Rohit",  "available": True},
     8:  {"Name": "Rahul",  "available": True},
@@ -67,7 +67,8 @@ teacher_list = {
     21: {"Name": "f5", "available": True},
     22: {"Name": "f6", "available": True},
     23: {"Name": "f7", "available": True},
-    24: {"Name": "f8", "available": True}
+    24: {"Name": "f8", "available": True},
+    #25: {"Name": "f9", "available": True}
 }
 
 # Create availability table for each time slot
@@ -92,7 +93,8 @@ class_teacher_periods = {
     4: {6:5, 1:5, 2:5, 11:5, 14:5, 8:5},
     5: {6:5, 1:2, 2:5, 10:2, 14:5, 8:3, 9:3},
     6: {6:5, 7:5, 15:5, 11:5, 14:5, 8:3, 9:3},
-    7: {16:5, 7:5, 15:5, 13:5, 14:5, 8:3, 9:3}
+    7: {16:5, 7:5, 15:5, 13:5, 14:5, 8:3, 9:3},
+    #8: {11:3,15:3}
 }
 lab_teacher_periods={
 #class:{teacher number:[how many labs in that week,how many continuous,lab_number]
@@ -181,7 +183,8 @@ for class_idx in range(No_of_classes):
     free_count = total_periods - total_assigned_periods
 
     # Assign free periods to the class
-    free_teacher_index = FREE_TEACHERS[class_idx]
+    #free_teacher_index = FREE_TEACHERS[class_idx]
+    free_teacher_index = FREE_TEACHERS[class_idx % len(FREE_TEACHERS)]
     teacher_part[free_teacher_index] = free_count
 
     # Priority list controls teacher trial order
@@ -227,22 +230,19 @@ def print_timetable_classwise(Timetable):
                 teacher = Timetable[row][cls]
 
                 # display cleanup
-                if isinstance(teacher, str) and teacher.startswith("f"):
+                if teacher in [info["Name"] for info in teacher_list.values() if info["Name"].startswith("f")]:
                     teacher = "free"
 
                 print(f"{teacher:^7}", end="")
 
             print()
-print("hii")
-print("printing ",class_to_teacher)
-print("hi")
-sys.stdout.flush()
 #print(main_teacher_list)
 # ---------------- MRV SLOT SELECTION ----------------
 def reset_labs():
     for x in range(total_periods):
         for y in range(No_of_classes):
-            if Timetable[x][y] in [teacher_list[t]["Name"] for t in lab_teacher_periods.get(y, {})]:
+            #if Timetable[x][y] in [teacher_list[t]["Name"] for t in lab_teacher_periods.get(y, {})]:
+            if isinstance(Timetable[x][y], str) and "(lab)" in Timetable[x][y]:
                 Timetable[x][y] = 0
     for x in range(total_periods):
         for class_idx, teachers in lab_teacher_periods.items():
@@ -277,7 +277,8 @@ def find_empty(Timetable, class_to_teacher, Tl):
 
 
             if teacher_count == 0:  # if no teacher is available... wither busy with that class or all credits over
-                return x, y
+                continue
+                #return x, y
 
             # Select slot with smallest domain
             if (
@@ -291,39 +292,7 @@ def find_empty(Timetable, class_to_teacher, Tl):
 
 
 # ---------------- BACKTRACKING SOLVER ----------------
-'''
-def solve(Timetable, class_to_teacher, Tl):
-    x, y = find_empty(Timetable, class_to_teacher, Tl)
 
-    # If no empty slot remains → solution found
-    if x == -1:
-        return True
-
-    # Copy priority list and shuffle for randomness
-    priority_list = class_to_teacher[y][-1].copy()   
-    random.shuffle(priority_list)
-
-    for i in priority_list:
-
-        # Check if teacher i can be assigned
-        if class_to_teacher[y][i] > 0 and Tl[x][i]["available"]:
-
-            # Assign teacher
-            class_to_teacher[y][i] -= 1
-            Tl[x][i]["available"] = False
-            Timetable[x][y] = Tl[x][i]["Name"]
-
-            # Recursive call
-            if solve(Timetable, class_to_teacher, Tl):
-                return True
-
-            # Backtrack (undo assignment)
-            Timetable[x][y] = 0
-            class_to_teacher[y][i] += 1
-            Tl[x][i]["available"] = True
-
-    return False
-'''
 def solve(Timetable, class_to_teacher, Tl):
     x, y = find_empty(Timetable, class_to_teacher, Tl)
 
@@ -368,5 +337,4 @@ if solve(Timetable, class_to_teacher, main_teacher_list):
     print_timetable_classwise(Timetable)
 else:
     print("No Solution!")
-print(class_to_teacher)
 log_file.close()
