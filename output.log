@@ -1,56 +1,56 @@
-Total lab periods: 10
-Assigned lab session 1 for class 0 with teacher 1 at periods 1 to 2
-Assigned lab session 2 for class 0 with teacher 1 at periods 6 to 7
-Assigned lab session 3 for class 0 with teacher 1 at periods 33 to 34
-Assigned lab session 1 for class 0 with teacher 2 at periods 14 to 15
-Assigned lab session 2 for class 0 with teacher 2 at periods 12 to 13
-Assigned lab session 1 for class 1 with teacher 9 at periods 14 to 15
-Assigned lab session 2 for class 1 with teacher 9 at periods 24 to 25
-Assigned lab session 1 for class 2 with teacher 10 at periods 24 to 25
-Assigned lab session 2 for class 2 with teacher 10 at periods 10 to 11
-Assigned lab session 3 for class 2 with teacher 10 at periods 4 to 5
+Total lab periods: 20
+Assigned lab session 2 for class 0 with teacher 1 at periods 28 to 29
+Assigned lab session 4 for class 0 with teacher 1 at periods 16 to 17
+Assigned lab session 6 for class 0 with teacher 1 at periods 34 to 35
+Assigned lab session 2 for class 0 with teacher 2 at periods 9 to 10
+Assigned lab session 4 for class 0 with teacher 2 at periods 1 to 2
+Assigned lab session 2 for class 1 with teacher 9 at periods 32 to 33
+Assigned lab session 4 for class 1 with teacher 9 at periods 12 to 13
+Assigned lab session 2 for class 2 with teacher 10 at periods 12 to 13
+Assigned lab session 4 for class 2 with teacher 10 at periods 32 to 33
+Assigned lab session 6 for class 2 with teacher 10 at periods 7 to 8
 
 ========== Class 0 ==========
         P  1   P  2   P  3   P  4   P  5   P  6   
-Monday     S7   S2(lab)S2(lab) free   free   free  
-Tuesday  S2(lab)S2(lab)  S9     S6    free    S5   
-WednesdayS3(lab)S3(lab)S3(lab)S3(lab)  S7     S6   
-Thursday  foyer  free    S9    free    S8     S5   
-Friday    free    S9     S5     S8     S5     S7   
-Saturday   iic    iic    S6   S2(lab)S2(lab) free  
+Monday    free  S3(lab 1)S3(lab 1)  S6     S6    free  
+Tuesday    S5    free    S7   S3(lab 1)S3(lab 1)  S5   
+Wednesday  S9    free   free    S9   S2(lab 1)S2(lab 1)
+Thursday  foyer   S8    free   free    S6     S9   
+Friday     S7     S8    free   free  S2(lab 1)S2(lab 1)
+Saturday   iic    iic   free   free  S2(lab 1)S2(lab 1)
 
 ========== Class 1 ==========
         P  1   P  2   P  3   P  4   P  5   P  6   
-Monday     S4    free    S5     S6    free    S5   
-Tuesday    S6    free   free    S7    free   free  
-Wednesday free    S6   S10(lab)S10(lab) free    S5   
-Thursday  foyer   S9     S5    free    S9    free  
-Friday   S10(lab)S10(lab) free    S4     S4    free  
-Saturday   iic    iic   free   free    S7     S4   
+Monday     S4     S9     S4     S5    free   free  
+Tuesday   free    S5    free    S9     S7    free  
+WednesdayS10(lab 1)S10(lab 1) free   free    S6    free  
+Thursday  foyer  free    S4    free    S5    free  
+Friday    free    S7     S4    free    S5     S6   
+Saturday   iic    iic  S10(lab 1)S10(lab 1) free    S6   
 
 ========== Class 2 ==========
         P  1   P  2   P  3   P  4   P  5   P  6   
-Monday     S5    free   free    S7   S11(lab)S11(lab)
-Tuesday    S4     S4     S3     S4   S11(lab)S11(lab)
-Wednesday  S7     S10    S5     S4     S10    S10  
-Thursday  foyer   S5     S3     S3    free   free  
-Friday   S11(lab)S11(lab) free    S3     S10   free  
-Saturday   iic    iic   free    S5     S5    free  
+Monday    free    S7    free    S4    free    S3   
+Tuesday    S3   S11(lab 2)S11(lab 2)  S4     S4    free  
+WednesdayS11(lab 2)S11(lab 2)  S3     S5     S3     S5   
+Thursday  foyer   S10    S5    free    S4     S10  
+Friday     S10    S5     S7     S5    free    S10  
+Saturday   iic    iic  S11(lab 2)S11(lab 2)  S3    free  
 
 ========== Class 3 ==========
         P  1   P  2   P  3   P  4   P  5   P  6   
-Monday     S11    S4     S12   free   free   free  
-Tuesday    S10   free    S1    free   free    S10  
-Wednesday  S12   free    S8     S1     S4     S4   
-Thursday  foyer   S11   free   free   free   free  
-Friday     S1    free    S1     S12    S8     S12  
-Saturday   iic    iic   free    S11    S4     S11  
+Monday     S10    S4    free   free    S4     S11  
+Tuesday   free    S8     S4     S12    S12    S4   
+Wednesday free   free   free   free   free   free  
+Thursday  foyer   S1     S11   free    S1     S11  
+Friday     S12    S12    S8     S11    S10   free  
+Saturday   iic    iic    S1     S1    free   free  
 
 ========== Class 4 ==========
         P  1   P  2   P  3   P  4   P  5   P  6   
-Monday     S1     S8     S3     S3    free   free  
-Tuesday    S3     S3    free   free    S1    free  
-Wednesday  S2     S5     S1     S5     S5    free  
-Thursday  foyer   S1     S2     S2     S5    free  
-Friday     S2    free    S2     S5    free    S3   
-Saturday   iic    iic   free    S1     S8    free  
+Monday    free    S2     S1     S2     S5     S2   
+Tuesday    S8     S1     S5    free    S2    free  
+Wednesday free   free    S1    free    S5     S1   
+Thursday  foyer   S3    free    S3    free   free  
+Friday     S3     S3     S3    free    S8     S5   
+Saturday   iic    iic    S2     S5    free    S1   
