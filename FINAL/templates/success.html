@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timetable Generated</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .slot { font-size: 0.85rem; min-height: 60px; vertical-align: middle !important; min-width: 120px; }
+        .day-header { background-color: #f8f9fa; font-weight: bold; width: 100px; }
+        .free-period { color: #adb5bd; font-style: italic; background-color: #fafafa; }
+        .lab-period { background-color: #e7f5ff; border-left: 4px solid #007bff; font-weight: bold; }
+        .table-container { margin-bottom: 50px; }
+    </style>
+</head>
+<body class="bg-light p-4">
+    <div class="container bg-white p-5 shadow rounded">
+        <div class="text-center mb-5">
+            <h1 class="display-5 text-success">📅 Timetable Ready!</h1>
+            <p class="lead">The solver successfully mapped your subjects into a conflict-free schedule.</p>
+        </div>
+
+        {% for class_idx in range(num_classes) %}
+        <div class="table-container">
+            <h3 class="border-bottom pb-2">Class: {{ class_names[class_idx] }}</h3>
+            <table class="table table-bordered text-center shadow-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Day</th>
+                        {% for p in range(periods_per_day) %}
+                        <th>P{{ p + 1 }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in range(num_days) %}
+                    <tr>
+                        <td class="day-header">Day {{ day + 1 }}</td>
+                        {% for p in range(periods_per_day) %}
+                            {% set slot_index = (day * periods_per_day) + p %}
+                            {% set slot_data = timetable[slot_index][class_idx] %}
+                            
+                            {# Logical Checks #}
+                            {% set is_free = 'f' in slot_data|lower and slot_data|length < 4 %}
+                            {% set is_lab = 'Lab' in slot_data|string %}
+                            
+                            <td class="slot {{ 'free-period' if is_free }} {{ 'lab-period' if is_lab }}">
+                                {{ "Free" if is_free else slot_data }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+
+        <div class="text-center mt-4">
+            <button onclick="window.print()" class="btn btn-primary btn-lg px-5">🖨️ Print Timetables</button>
+            <a href="/" class="btn btn-outline-secondary btn-lg ms-2">Upload New PDF</a>
+        </div>
+    </div>
+</body>
+</html>

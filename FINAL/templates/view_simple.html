@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify & Update Schedule</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .container { max-width: 1200px; margin-top: 30px; }
+        .table-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        
+        .editable { 
+            cursor: pointer; 
+            border-bottom: 2px solid #e9ecef; 
+            transition: all 0.2s; 
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            width: 100%;
+        }
+        .editable:hover { background-color: #fff9db; border-bottom-color: #ffc107; }
+        .editable:focus { background-color: #fff; outline: 2px solid #0d6efd; border-bottom-color: transparent; }
+        
+        .class-cell { position: relative; min-width: 150px; }
+        .row-controls { 
+            position: absolute; 
+            right: 5px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            display: none; 
+            flex-direction: column; 
+            gap: 2px;
+            z-index: 10;
+        }
+        .class-cell:hover .row-controls { display: flex; }
+        
+        .btn-add-inline { 
+            font-size: 9px; 
+            padding: 2px 6px; 
+            font-weight: bold;
+            background: white;
+            border: 1px solid #198754;
+            color: #198754;
+            text-transform: uppercase;
+        }
+        .btn-add-inline:hover { background: #198754; color: white; }
+
+        .lab-row { background-color: #fffdf5; }
+        .btn-delete { color: #dc3545; border: none; background: none; font-size: 1.4rem; cursor: pointer; }
+        .btn-delete:hover { transform: scale(1.2); }
+        
+        .sticky-header { position: sticky; top: 0; z-index: 100; background: white; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<div class="container table-container">
+    <div class="sticky-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1 text-primary">📝 Data Verification</h2>
+            <p class="text-muted mb-0">Review the extracted course names and faculty codes before running the solver.</p>
+        </div>
+        <button onclick="saveChanges()" class="btn btn-success btn-lg px-5 shadow-sm">Save & Finalize</button>
+    </div>
+
+    
+
+    <table class="table table-hover align-middle" id="dataTable">
+        <thead class="table-dark">
+            <tr>
+                <th>Class (Hover for +)</th>
+                <th>Course Name</th>
+                <th>Faculty</th>
+                <th>Type</th>
+                <th class="text-center" style="width: 120px;">Hours</th>
+                <th style="width: 50px;"></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% for row in rows %}
+            <tr class="{{ 'lab-row' if row.type == 'Lab' else '' }}">
+                <td class="class-cell">
+                    <span contenteditable="true" class="editable">{{ row.class }}</span>
+                    <div class="row-controls">
+                        <button onclick="insertRow(this, 'up')" class="btn btn-add-inline">↑ Add Up</button>
+                        <button onclick="insertRow(this, 'down')" class="btn btn-add-inline">↓ Add Down</button>
+                    </div>
+                </td>
+                <td><span contenteditable="true" class="editable">{{ row.subject }}</span></td>
+                <td><span contenteditable="true" class="editable">{{ row.teacher }}</span></td>
+                <td>
+                    <select class="form-select form-select-sm type-select">
+                        <option value="Theory" {% if row.type == 'Theory' %}selected{% endif %}>Theory</option>
+                        <option value="Lab" {% if row.type == 'Lab' %}selected{% endif %}>Lab</option>
+                    </select>
+                </td>
+                <td contenteditable="true" class="editable fw-bold text-center">{{ row.periods }}</td>
+                <td class="text-center">
+                    <button onclick="this.closest('tr').remove()" class="btn-delete" title="Remove Row">&times;</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function insertRow(button, direction) {
+        const currentRow = button.closest('tr');
+        const parentTable = currentRow.parentNode;
+        const currentClass = currentRow.querySelector('.class-cell .editable').innerText;
+        
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td class="class-cell">
+                <span contenteditable="true" class="editable">${currentClass}</span>
+                <div class="row-controls">
+                    <button onclick="insertRow(this, 'up')" class="btn btn-add-inline">↑ Add Up</button>
+                    <button onclick="insertRow(this, 'down')" class="btn btn-add-inline">↓ Add Down</button>
+                </div>
+            </td>
+            <td><span contenteditable="true" class="editable text-muted">New Course Name</span></td>
+            <td><span contenteditable="true" class="editable text-muted">Faculty ID</span></td>
+            <td>
+                <select class="form-select form-select-sm type-select">
+                    <option value="Theory" selected>Theory</option>
+                    <option value="Lab">Lab</option>
+                </select>
+            </td>
+            <td contenteditable="true" class="editable fw-bold text-center">3</td>
+            <td class="text-center">
+                <button onclick="this.closest('tr').remove()" class="btn-delete">&times;</button>
+            </td>
+        `;
+
+        if (direction === 'up') {
+            parentTable.insertBefore(newRow, currentRow);
+        } else {
+            parentTable.insertBefore(newRow, currentRow.nextSibling);
+        }
+        
+        setTimeout(() => newRow.querySelectorAll('.editable')[1].focus(), 10);
+    }
+
+    function saveChanges() {
+        const btn = document.querySelector("button[onclick='saveChanges()']");
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Solving Timetable...`;
+
+        const data = [];
+        document.querySelectorAll("#tableBody tr").forEach(row => {
+            const cells = row.querySelectorAll("td");
+            // Indexing: 0=Class, 1=Course, 2=Faculty, 4=Periods
+            data.push({
+                class: cells[0].querySelector('.editable').innerText.trim(),
+                subject: cells[1].innerText.trim(),
+                teacher: cells[2].innerText.trim(),
+                type: row.querySelector(".type-select").value,
+                periods: cells[4].innerText.trim() 
+            });
+        });
+
+        fetch('/update-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                window.location.href = result.redirect;
+            } else {
+                alert("Solver Error: " + result.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(err => {
+            alert("Connection error");
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    }
+</script>
+
+</body>
+</html>
