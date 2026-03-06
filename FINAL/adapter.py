@@ -23,8 +23,9 @@ def build_solver_inputs_from_classes(CONFIG, days, periods):
             if tid not in teacher_list:
                 teacher_list[tid] = {"Name": tname, "available": True}
 
-            subject_map[(cidx, tid)] = item.get("subject", "Subject")
-
+            #subject_map[(cidx, tid)] = item.get("subject", "Subject")
+            subject_map[(cidx, tid, "lab" if str(item.get("type")).lower() == "lab" else "theory")] = item.get("subject", "Subject")
+            #if str(item.get("type")).lower() == "lab":
             if str(item.get("type")).lower() == "lab":
                 lab_teacher_periods.setdefault(cidx, {})
                 lab_teacher_periods[cidx][tid] = [
@@ -35,6 +36,7 @@ def build_solver_inputs_from_classes(CONFIG, days, periods):
                 if tid not in class_teacher_periods[cidx]:
                     class_teacher_periods[cidx][tid] = 0
             else:
+                #class_teacher_periods[cidx][tid] = class_teacher_periods[cidx].get(tid, 0) + hours
                 class_teacher_periods[cidx][tid] = class_teacher_periods[cidx].get(tid, 0) + hours
         
         # Filler Logic: High ID range to avoid clashing

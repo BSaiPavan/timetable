@@ -130,7 +130,8 @@ def generate_timetable(
                             break
                     if can_assign:
                         for i in range(consecutive_periods):
-                            subject_name = subject_map.get((class_idx, teacher_id), "Lab")
+                            #subject_name = subject_map.get((class_idx, teacher_id), "Lab")
+                            subject_name = subject_map.get((class_idx, teacher_id, "lab"), "Lab")
                             Timetable[slot + i][class_idx] = f"{subject_name} (Lab {lab_number})"
                             main_teacher_list[slot + i][teacher_id]["available"] = False
                             class_to_teacher[class_idx][teacher_id] -= 1
@@ -171,8 +172,10 @@ def generate_timetable(
                 t_name = teacher_list[i]["Name"]
                 class_to_teacher[y][i] -= 1
                 main_teacher_list[x][i]["available"] = False
-                Timetable[x][y] = subject_map.get((y, i), t_name)
-                
+                #Timetable[x][y] = subject_map.get((y, i), t_name)
+                theory_name = subject_map.get((y, i, "theory"), teacher_list[i]["Name"])
+                Timetable[x][y] = theory_name
+
                 if solve(): return True
                 
                 Timetable[x][y] = 0
