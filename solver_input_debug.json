@@ -115,7 +115,8 @@
             "5": 5,
             "4": 5,
             "0": 5,
-            "1004": 16
+            "10": 2,
+            "1004": 14
         }
     },
     "lab_periods": {
@@ -147,41 +148,276 @@
         }
     },
     "subject_map": {
-        "(0, 8, 'theory')": "General English",
-        "(0, 9, 'theory')": "II Language",
-        "(0, 4, 'theory')": "Problem Solving with Computers",
-        "(0, 7, 'theory')": "Calculus",
-        "(0, 10, 'theory')": "Awareness",
-        "(0, 11, 'theory')": "Multidisciplinary Course",
-        "(0, 4, 'lab')": "Software Lab in C \u2013 Part I",
-        "(0, 5, 'lab')": "Software Lab in Python \u2013 I",
-        "(0, 1000)": "Free",
-        "(1, 8, 'theory')": "General English",
-        "(1, 11, 'theory')": "Multidisciplinary Course",
-        "(1, 6, 'theory')": "Discrete Mathematics for Computer Science",
-        "(1, 7, 'theory')": "Statistics for Data Science",
-        "(1, 9, 'theory')": "Awareness",
-        "(1, 1, 'lab')": "Software Lab in Data Visulaization",
-        "(1, 1001)": "Free",
-        "(2, 6, 'theory')": "Operating Systems",
-        "(2, 1, 'theory')": "Skill Enhancement Course",
-        "(2, 7, 'theory')": "Optimization for Machine Learning",
-        "(2, 5, 'theory')": "Datamining and Machine Learning",
-        "(2, 9, 'theory')": "Awareness",
-        "(2, 2, 'lab')": "Software Lab in Java",
-        "(2, 1002)": "Free",
-        "(3, 3, 'theory')": "Linux System Programming",
-        "(3, 6, 'theory')": "Elective \u2013 II",
-        "(3, 2, 'theory')": "Elective \u2013 III",
-        "(3, 1, 'theory')": "Research Methodology",
-        "(3, 0, 'theory')": "Cloud Computing",
-        "(3, 10, 'theory')": "Awareness",
-        "(3, 1003)": "Free",
-        "(4, 7, 'theory')": "Stochastic Processes",
-        "(4, 5, 'theory')": "Deep Learning",
-        "(4, 4, 'theory')": "Natural Language Processing",
-        "(4, 0, 'theory')": "Cloud Computing",
-        "(4, 1004)": "Free"
+        "0": {
+            "8": [
+                {
+                    "name": "General English",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "9": [
+                {
+                    "name": "II Language",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "4": [
+                {
+                    "name": "Problem Solving with Computers",
+                    "hours": 4,
+                    "type": "theory"
+                },
+                {
+                    "name": "Software Lab in C \u2013 Part I",
+                    "hours": 6,
+                    "type": "lab"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Calculus",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Awareness",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "11": [
+                {
+                    "name": "Multidisciplinary Course",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "5": [
+                {
+                    "name": "Software Lab in Python \u2013 I",
+                    "hours": 2,
+                    "type": "lab"
+                }
+            ],
+            "1000": [
+                {
+                    "name": "Free",
+                    "hours": 9,
+                    "type": "theory"
+                }
+            ]
+        },
+        "1": {
+            "8": [
+                {
+                    "name": "General English",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "11": [
+                {
+                    "name": "Computer Organization and design",
+                    "hours": 4,
+                    "type": "theory"
+                },
+                {
+                    "name": "Multidisciplinary Course",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "6": [
+                {
+                    "name": "Discrete Mathematics for Computer Science",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Statistics for Data Science",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "9": [
+                {
+                    "name": "Awareness",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1": [
+                {
+                    "name": "Software Lab in Data Visulaization",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1001": [
+                {
+                    "name": "Free",
+                    "hours": 13,
+                    "type": "theory"
+                }
+            ]
+        },
+        "2": {
+            "6": [
+                {
+                    "name": "Operating Systems",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "1": [
+                {
+                    "name": "Computer Networks",
+                    "hours": 4,
+                    "type": "theory"
+                },
+                {
+                    "name": "Skill Enhancement Course",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Optimization for Machine Learning",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "5": [
+                {
+                    "name": "Datamining and Machine Learning",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "9": [
+                {
+                    "name": "Awareness",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "2": [
+                {
+                    "name": "Software Lab in Java",
+                    "hours": 6,
+                    "type": "lab"
+                }
+            ],
+            "1002": [
+                {
+                    "name": "Free",
+                    "hours": 7,
+                    "type": "theory"
+                }
+            ]
+        },
+        "3": {
+            "3": [
+                {
+                    "name": "Linux System Programming",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "6": [
+                {
+                    "name": "Elective \u2013 II",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "2": [
+                {
+                    "name": "Elective \u2013 III",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "1": [
+                {
+                    "name": "Research Methodology",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Cloud Computing",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Awareness",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1003": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "4": {
+            "7": [
+                {
+                    "name": "Stochastic Processes",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "5": [
+                {
+                    "name": "Deep Learning",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "4": [
+                {
+                    "name": "Natural Language Processing",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Cloud Computing",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Awareness",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1004": [
+                {
+                    "name": "Free",
+                    "hours": 14,
+                    "type": "theory"
+                }
+            ]
+        }
     },
     "fixed_periods": {
         "0": {}

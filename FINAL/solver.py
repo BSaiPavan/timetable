@@ -131,7 +131,14 @@ def generate_timetable(
                     if can_assign:
                         for i in range(consecutive_periods):
                             #subject_name = subject_map.get((class_idx, teacher_id), "Lab")
-                            subject_name = subject_map.get((class_idx, teacher_id, "lab"), "Lab")
+                            #subject_name = subject_map.get((class_idx, teacher_id, "lab"), "Lab")
+                            # Look into the teacher's bucket for the Lab subject name
+                            subject_name = "Lab"
+                            if class_idx in subject_map and teacher_id in subject_map[class_idx]:
+                                for sub in subject_map[class_idx][teacher_id]:
+                                    if sub["type"] == "lab":
+                                        subject_name = sub["name"]
+                                        break
                             Timetable[slot + i][class_idx] = f"{subject_name} (Lab {lab_number})"
                             main_teacher_list[slot + i][teacher_id]["available"] = False
                             class_to_teacher[class_idx][teacher_id] -= 1
@@ -173,8 +180,18 @@ def generate_timetable(
                 class_to_teacher[y][i] -= 1
                 main_teacher_list[x][i]["available"] = False
                 #Timetable[x][y] = subject_map.get((y, i), t_name)
-                theory_name = subject_map.get((y, i, "theory"), teacher_list[i]["Name"])
-                Timetable[x][y] = theory_name
+                #theory_name = subject_map.get((y, i, "theory"), teacher_list[i]["Name"])
+                #Timetable[x][y] = theory_name
+                assigned_name = t_name # Default to teacher code if something goes wrong
+                if y in subject_map and i in subject_map[y]:
+                    for sub in subject_map[y][i]:
+                        # Check if this specific subject still has hours to be placed
+                        if sub["type"] == "theory" and sub["hours"] > 0:
+                            assigned_name = sub["name"]
+                            sub["hours"] -= 1 # Reduce the specific subject count
+                            break
+
+                Timetable[x][y] = assigned_name
 
                 if solve(): return True
                 

@@ -24,7 +24,19 @@ def build_solver_inputs_from_classes(CONFIG, days, periods):
                 teacher_list[tid] = {"Name": tname, "available": True}
 
             #subject_map[(cidx, tid)] = item.get("subject", "Subject")
-            subject_map[(cidx, tid, "lab" if str(item.get("type")).lower() == "lab" else "theory")] = item.get("subject", "Subject")
+            #subject_map[(cidx, tid, "lab" if str(item.get("type")).lower() == "lab" else "theory")] = item.get("subject", "Subject")
+            # Initialize subject_map as a nested dictionary and the teacher as a list
+            if cidx not in subject_map:
+                subject_map[cidx] = {}
+            if tid not in subject_map[cidx]:
+                subject_map[cidx][tid] = []
+
+            # Add this specific subject as a 'bucket' entry
+            subject_map[cidx][tid].append({
+                "name": item.get("subject", "Subject"),
+                "hours": hours,
+                "type": str(item.get("type")).lower().strip()
+            })
             #if str(item.get("type")).lower() == "lab":
             if str(item.get("type")).lower() == "lab":
                 lab_teacher_periods.setdefault(cidx, {})
@@ -45,7 +57,8 @@ def build_solver_inputs_from_classes(CONFIG, days, periods):
         
         free_credits = total_slots_per_class - total_assigned_hours
         class_teacher_periods[cidx][f_id] = max(0, free_credits)
-        subject_map[(cidx, f_id)] = "Free"
+        #subject_map[(cidx, f_id)] = "Free"
+        subject_map[cidx][f_id] = [{"name": "Free", "hours": max(0, free_credits), "type": "theory"}]
 
     return No_of_classes, teacher_list, class_teacher_periods, lab_teacher_periods, subject_map
 
