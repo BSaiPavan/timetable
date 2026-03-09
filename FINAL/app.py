@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 # Custom modules
 from config import CONFIG
-from solver import generate_timetable
+from solver import generate_timetable, generate_timetable_with_retry
 from adapter import build_solver_inputs_from_classes
 from extractor import get_solver_data_from_pdf 
 
@@ -172,11 +172,17 @@ def setup_fixed():
     with open("temp_web_data.json", "r") as f:
         stored = json.load(f)
     
-    return render_template("fixed_setup.html", 
-                           days=stored['days'], 
-                           periods=stored['periods'], 
-                           class_data=stored['organized'])
-
+    # Defensive: always provide periods
+    periods_value = stored.get('periods', 8)          # fallback to 8 if missing
+    if not isinstance(periods_value, (int, float)):
+        periods_value = 8
+    
+    return render_template(
+        "fixed_setup.html",
+        days=stored.get('days', 6),
+        periods=periods_value,                        # guaranteed number
+        class_data=stored.get('organized', {})
+    )
 @app.route("/run-final-solver", methods=["POST"])
 def run_final_solver():
     try:
@@ -212,7 +218,7 @@ def run_final_solver():
             json.dump(debug_payload, f, indent=4)
         # --------------------------------------------------------------
 
-        final_timetable = generate_timetable(
+        final_timetable = generate_timetable_with_retry(
             No_of_classes, stored['days'], stored['periods'], t_list, 
             c_theory, l_periods, subj_map, 
             fixed_periods=fixed_data

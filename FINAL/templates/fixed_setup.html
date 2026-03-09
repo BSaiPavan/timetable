@@ -4,11 +4,70 @@
     <title>Class-Specific Setup</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        .slot-card { border: 1px solid #dee2e6; padding: 10px; border-radius: 5px; background: white; min-height: 100px; transition: 0.3s; }
-        .slot-card:focus-within { border-color: #0d6efd; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); }
-        .sticky-top-custom { position: sticky; top: 0; background: #f8f9fa; z-index: 1000; padding: 20px 0; border-bottom: 2px solid #ddd; }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+        .slot-card {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 5px;
+            background: white;
+            min-height: 100px;
+            transition: 0.3s;
+        }
+        .slot-card:focus-within {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        .sticky-top-custom {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 1000;
+            padding: 20px 0;
+            border-bottom: 2px solid #ddd;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        /* Fixed subject slot */
+        .auto-filled {
+            background-color: #e9f7ff;
+            border-left: 4px solid #0d6efd;
+        }
+        /* Fixed FREE slot */
+        .fixed-free {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+        }
+        .fixed-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .badge-fixed-subject { background: #cce5ff; color: #004085; }
+        .badge-fixed-free    { background: #fff3cd; color: #856404; }
+        .badge-fixed-event   { background: #d4edda; color: #155724; }
+        /* Fixed EVENT slot (no teacher) */
+        .fixed-event {
+            background-color: #f0fff4;
+            border-left: 4px solid #28a745;
+        }
+        .event-label-input {
+            margin-top: 4px;
+            font-size: 0.8rem;
+        }
     </style>
+    <meta name="periods-count" content="{{ periods }}">
 </head>
 <body class="bg-light">
 
@@ -22,7 +81,10 @@
         <div class="row align-items-center">
             <div class="col-md-6">
                 <h3>Step 2: Setup Fixed Slots per Class</h3>
-                <small class="text-muted">Changes are saved automatically as you type.</small>
+                <small class="text-muted">
+                    Pick a subject/teacher <em>or</em> "Free Period" to lock a slot before solving.
+                    Labs/blocks auto-extend downward if continuous &gt; 1.
+                </small>
             </div>
             <div class="col-md-4">
                 <select id="classSelector" class="form-select form-select-lg border-primary" onchange="switchClass()">
@@ -51,12 +113,17 @@
                     <td class="fw-bold bg-light text-center align-middle">P{{ p + 1 }}</td>
                     {% for d in range(days) %}
                     <td>
-                        <div class="slot-card">
-                            <input type="text" class="form-control form-control-sm mb-1 label-input" 
-                                   placeholder="Label (e.g. games)" data-slot="{{d}}-{{p}}">
+                        <div class="slot-card" data-slot="{{d}}-{{p}}">
+                            <!-- Fixed badge shown when slot is locked -->
+                            <div class="fixed-badge-wrap mb-1" style="min-height:18px;"></div>
                             <select class="form-select form-select-sm teacher-select" data-slot="{{d}}-{{p}}">
-                                <option value="None">No Teacher</option>
+                                <!-- Options injected by JS -->
                             </select>
+                            <!-- Shown only when __event__ is selected -->
+                            <input type="text" class="form-control form-control-sm event-label-input"
+                                   placeholder="Event name (e.g. Moral Class)"
+                                   data-slot="{{d}}-{{p}}"
+                                   style="display:none;">
                         </div>
                     </td>
                     {% endfor %}
@@ -68,90 +135,210 @@
 </div>
 
 <script>
-const classInfo = JSON.parse('{{ class_data | tojson | safe }}');
-const classKeys = Object.keys(classInfo);
-const storage = {}; 
+const classInfo  = JSON.parse('{{ class_data | tojson | safe }}');
+const classKeys  = Object.keys(classInfo);
+const storage    = {};   // storage[clsIdx][slot] = { label, teacher_id, is_free, is_event }
 
+const periodsMeta = document.querySelector('meta[name="periods-count"]');
+let NUM_PERIODS = periodsMeta ? parseInt(periodsMeta.content, 10) : 8;
+if (isNaN(NUM_PERIODS) || NUM_PERIODS < 1) NUM_PERIODS = 8;
+
+// ─── BUILD DROPDOWN OPTIONS FOR A CLASS ───────────────────────────────────────
+function buildOptions(teacherSelect, teachersForClass) {
+    teacherSelect.innerHTML = '';
+
+    // 1. "Not Fixed" – default
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '__none__';
+    defaultOpt.textContent = '— Not Fixed —';
+    teacherSelect.appendChild(defaultOpt);
+
+    // 2. "Free Period" – filler teacher credit goes down
+    const freeOpt = document.createElement('option');
+    freeOpt.value = '__free__';
+    freeOpt.textContent = '🟡 Free Period';
+    teacherSelect.appendChild(freeOpt);
+
+    // 3. "Event / No Teacher" – no credits touched at all
+    const eventOpt = document.createElement('option');
+    eventOpt.value = '__event__';
+    eventOpt.textContent = '🟢 Event (No Teacher)';
+    teacherSelect.appendChild(eventOpt);
+
+    // 4. Actual subject-teacher pairs
+    teachersForClass.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t.teacher_id;
+        option.textContent = `${t.subject} (${t.teacher})`;
+        option.dataset.subject    = t.subject    || 'Subject';
+        option.dataset.type       = t.type        || 'theory';
+        option.dataset.continuous = t.continuous  || 1;
+        teacherSelect.appendChild(option);
+    });
+}
+
+// ─── APPLY VISUAL STYLE TO A CARD ─────────────────────────────────────────────
+function styleCard(card, mode) {
+    card.classList.remove('auto-filled', 'fixed-free', 'fixed-event');
+    const badgeWrap  = card.querySelector('.fixed-badge-wrap');
+    const eventInput = card.querySelector('.event-label-input');
+    badgeWrap.innerHTML = '';
+    eventInput.style.display = 'none';
+
+    if (mode === 'subject') {
+        card.classList.add('auto-filled');
+        badgeWrap.innerHTML = '<span class="fixed-badge badge-fixed-subject">📌 Fixed</span>';
+    } else if (mode === 'free') {
+        card.classList.add('fixed-free');
+        badgeWrap.innerHTML = '<span class="fixed-badge badge-fixed-free">🟡 Free</span>';
+    } else if (mode === 'event') {
+        card.classList.add('fixed-event');
+        badgeWrap.innerHTML = '<span class="fixed-badge badge-fixed-event">🟢 Event</span>';
+        eventInput.style.display = 'block';
+    }
+}
+
+// ─── SWITCH CLASS ──────────────────────────────────────────────────────────────
 function switchClass() {
     const clsIdx = document.getElementById('classSelector').value;
     const currentClassName = classKeys[clsIdx];
-    const teachersForClass = classInfo[currentClassName];
+    const teachersForClass  = classInfo[currentClassName] || [];
 
     if (!storage[clsIdx]) storage[clsIdx] = {};
 
     document.querySelectorAll('.slot-card').forEach(card => {
-        const labelInput = card.querySelector('.label-input');
         const teacherSelect = card.querySelector('.teacher-select');
-        const slot = labelInput.dataset.slot;
+        const eventInput    = card.querySelector('.event-label-input');
+        const slot          = card.dataset.slot;
 
-        // Reset and rebuild dropdown to avoid duplication
-        teacherSelect.innerHTML = '<option value="None">No Teacher</option>';
-        teachersForClass.forEach(t => {
-            teacherSelect.innerHTML += `<option value="${t.teacher_id}">${t.subject} (${t.teacher})</option>`;
-        });
+        buildOptions(teacherSelect, teachersForClass);
 
-        // Load existing data if available
-        const saved = storage[clsIdx][slot] || { label: "", teacher_id: "None" };
-        labelInput.value = saved.label;
-        teacherSelect.value = saved.teacher_id;
+        const saved = storage[clsIdx][slot];
+        if (saved) {
+            teacherSelect.value = saved.teacher_id;
+            if (saved.is_event) {
+                styleCard(card, 'event');
+                eventInput.value = saved.label || '';
+            } else {
+                styleCard(card, saved.is_free ? 'free' : 'subject');
+            }
+        } else {
+            teacherSelect.value = '__none__';
+            styleCard(card, 'default');
+        }
     });
 }
 
-document.addEventListener('input', (e) => {
-    if (e.target.classList.contains('label-input') || e.target.classList.contains('teacher-select')) {
-        const clsIdx = document.getElementById('classSelector').value;
-        const card = e.target.closest('.slot-card');
-        const slot = e.target.dataset.slot;
-        
-        if (!storage[clsIdx]) storage[clsIdx] = {};
-        
-        storage[clsIdx][slot] = {
-            label: card.querySelector('.label-input').value,
-            teacher_id: card.querySelector('.teacher-select').value
-        };
+// ─── HANDLE SELECTION CHANGE ───────────────────────────────────────────────────
+document.addEventListener('change', function(e) {
+    const target = e.target;
+    if (!target.classList.contains('teacher-select')) return;
+
+    const card   = target.closest('.slot-card');
+    if (!card) return;
+
+    const slot   = card.dataset.slot;
+    const [day, period] = slot.split('-').map(Number);
+    const clsIdx = document.getElementById('classSelector').value;
+
+    if (!storage[clsIdx]) storage[clsIdx] = {};
+
+    const selectedVal = target.value;
+
+    if (selectedVal === '__none__') {
+        delete storage[clsIdx][slot];
+        styleCard(card, 'default');
+        return;
+    }
+
+    if (selectedVal === '__free__') {
+        storage[clsIdx][slot] = { label: 'Free', teacher_id: '__free__', is_free: true, is_event: false };
+        styleCard(card, 'free');
+        return;
+    }
+
+    // ── Event / No Teacher ───────────────────────────────────────────────────
+    if (selectedVal === '__event__') {
+        const eventInput = card.querySelector('.event-label-input');
+        styleCard(card, 'event');
+        const label = eventInput.value.trim() || 'Event';
+        storage[clsIdx][slot] = { label, teacher_id: '__event__', is_free: false, is_event: true };
+        return;
+    }
+
+    // ── Subject/Teacher selected ─────────────────────────────────────────────
+    const selectedOption = target.options[target.selectedIndex];
+    const subject    = selectedOption.dataset.subject;
+    const continuous = parseInt(selectedOption.dataset.continuous) || 1;
+
+    storage[clsIdx][slot] = { label: subject, teacher_id: selectedVal, is_free: false, is_event: false };
+    styleCard(card, 'subject');
+
+    if (continuous > 1) {
+        for (let i = 1; i < continuous; i++) {
+            const nextP  = period + i;
+            if (nextP >= NUM_PERIODS) break;
+            const nextSlot = `${day}-${nextP}`;
+            const nextCard = document.querySelector(`.slot-card[data-slot="${nextSlot}"]`);
+            if (!nextCard) break;
+            nextCard.querySelector('.teacher-select').value = selectedVal;
+            storage[clsIdx][nextSlot] = { label: subject, teacher_id: selectedVal, is_free: false, is_event: false };
+            styleCard(nextCard, 'subject');
+        }
     }
 });
 
+// ─── UPDATE EVENT LABEL AS USER TYPES ─────────────────────────────────────────
+document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('event-label-input')) return;
+    const card   = e.target.closest('.slot-card');
+    if (!card) return;
+    const slot   = card.dataset.slot;
+    const clsIdx = document.getElementById('classSelector').value;
+    if (storage[clsIdx] && storage[clsIdx][slot] && storage[clsIdx][slot].is_event) {
+        storage[clsIdx][slot].label = e.target.value.trim() || 'Event';
+    }
+});
+
+// ─── RUN SOLVER ───────────────────────────────────────────────────────────────
 function runSolver() {
-    const btn = document.getElementById('genBtn');
+    const btn    = document.getElementById('genBtn');
     const loader = document.getElementById('loader');
-    
+
+    // Build payload: send ALL fixed slots (subject AND free), skip only "Not Fixed"
+    const cleanStorage = {};
+    for (let cls in storage) {
+        cleanStorage[cls] = {};
+        for (let slot in storage[cls]) {
+            const item = storage[cls][slot];
+            // Include free periods AND subject periods — skip only un-set slots
+            if (item && item.teacher_id !== '__none__') {
+                cleanStorage[cls][slot] = item;
+            }
+        }
+    }
+
     btn.disabled = true;
     loader.style.display = 'flex';
-
-    console.log("Sending fixed slots to solver:", storage);
 
     fetch('/run-final-solver', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fixed_slots: storage })
+        body: JSON.stringify({ fixed_slots: cleanStorage })
     })
-    .then(async response => {
-        const text = await response.text(); // Get raw text first to avoid JSON parse errors
-        try {
-            const data = JSON.parse(text);
-            if (response.ok && data.status === 'success') {
-                window.location.href = data.redirect;
-            } else {
-                alert("Solver Error: " + (data.message || "The solver could not find a valid schedule."));
-                btn.disabled = false;
-                loader.style.display = 'none';
-            }
-        } catch (e) {
-            console.error("Server crashed or sent invalid JSON:", text);
-            alert("Critical Server Error. Check your Python terminal for the traceback.");
-            btn.disabled = false;
-            loader.style.display = 'none';
-        }
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') window.location.href = data.redirect;
+        else alert("Error: " + data.message);
     })
-    .catch(err => {
-        console.error("Fetch error:", err);
-        alert("Network Error: " + err.message);
+    .catch(err => alert("Network error: " + err))
+    .finally(() => {
         btn.disabled = false;
         loader.style.display = 'none';
     });
 }
-window.onload = switchClass;
+
+window.onload = function() { switchClass(); };
 </script>
 </body>
 </html>
