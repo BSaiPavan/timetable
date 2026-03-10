@@ -472,7 +472,9 @@ def setup_fixed():
 @app.route("/run-final-solver", methods=["POST"])
 def run_final_solver():
     try:
-        fixed_data = request.get_json().get('fixed_slots', {})
+        payload        = request.get_json()
+        fixed_data     = payload.get('fixed_slots', {})
+        unavail_data   = payload.get('teacher_unavailability', {})
         
         if not os.path.exists("temp_web_data.json"):
             return jsonify({"status": "error", "message": "Session expired. Please restart."}), 400
@@ -505,9 +507,10 @@ def run_final_solver():
         # --------------------------------------------------------------
 
         final_timetable = generate_timetable_with_retry(
-            No_of_classes, stored['days'], stored['periods'], t_list, 
-            c_theory, l_periods, subj_map, 
-            fixed_periods=fixed_data
+            No_of_classes, stored['days'], stored['periods'], t_list,
+            c_theory, l_periods, subj_map,
+            fixed_periods=fixed_data,
+            teacher_unavailability=unavail_data
         )
 
         if final_timetable:

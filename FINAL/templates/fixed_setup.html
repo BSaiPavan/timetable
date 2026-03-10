@@ -4,6 +4,7 @@
     <title>Class-Specific Setup</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
+        /* ── Slot cards (fixed slots tab) ── */
         .slot-card {
             border: 1px solid #dee2e6;
             padding: 10px;
@@ -14,58 +15,104 @@
         }
         .slot-card:focus-within {
             border-color: #0d6efd;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25);
         }
+        .auto-filled  { background-color: #e9f7ff; border-left: 4px solid #0d6efd; }
+        .fixed-free   { background-color: #fff8e1; border-left: 4px solid #ffc107; }
+        .fixed-event  { background-color: #f0fff4; border-left: 4px solid #28a745; }
+        .fixed-badge  { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; letter-spacing: 0.3px; }
+        .badge-fixed-subject { background: #cce5ff; color: #004085; }
+        .badge-fixed-free    { background: #fff3cd; color: #856404; }
+        .badge-fixed-event   { background: #d4edda; color: #155724; }
+        .event-label-input   { margin-top: 4px; font-size: 0.8rem; }
+
+        /* ── Unavailability multi-select dropdowns ── */
+        .unavail-day-card {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 14px 12px;
+            height: 100%;
+        }
+        .unavail-day-card .day-title {
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: #1e3a5f;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .unavail-day-card select {
+            width: 100%;
+            border-radius: 6px;
+            border: 1.5px solid #dee2e6;
+            font-size: 0.82rem;
+            padding: 3px 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        .unavail-day-card select option:checked {
+            background: #fee2e2;
+            color: #b91c1c;
+            font-weight: 600;
+        }
+        .unavail-count-badge {
+            font-size: 0.7rem;
+            padding: 2px 7px;
+            border-radius: 20px;
+            background: #fee2e2;
+            color: #b91c1c;
+            font-weight: 700;
+            display: none;
+            margin-left: 6px;
+        }
+
+        /* ── Sticky header ── */
         .sticky-top-custom {
             position: sticky;
             top: 0;
             background: #f8f9fa;
             z-index: 1000;
-            padding: 20px 0;
+            padding: 16px 0;
             border-bottom: 2px solid #ddd;
         }
+
+        /* ── Loading overlay ── */
         .loading-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.8);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(255,255,255,0.85);
             z-index: 2000;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
-        /* Fixed subject slot */
-        .auto-filled {
-            background-color: #e9f7ff;
-            border-left: 4px solid #0d6efd;
-        }
-        /* Fixed FREE slot */
-        .fixed-free {
-            background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
-        }
-        .fixed-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
+
+        /* ── Tab pills ── */
+        .step-pill {
+            padding: 7px 20px;
+            border-radius: 50px;
             font-weight: 600;
-            letter-spacing: 0.3px;
+            font-size: 0.9rem;
+            border: 2px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            transition: all .15s;
+            color: #6c757d;
         }
-        .badge-fixed-subject { background: #cce5ff; color: #004085; }
-        .badge-fixed-free    { background: #fff3cd; color: #856404; }
-        .badge-fixed-event   { background: #d4edda; color: #155724; }
-        /* Fixed EVENT slot (no teacher) */
-        .fixed-event {
-            background-color: #f0fff4;
-            border-left: 4px solid #28a745;
+        .step-pill.active {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: white;
         }
-        .event-label-input {
-            margin-top: 4px;
-            font-size: 0.8rem;
+        .step-pill:not(.active):hover {
+            border-color: #0d6efd;
+            color: #0d6efd;
         }
+
+
     </style>
     <meta name="periods-count" content="{{ periods }}">
 </head>
@@ -77,95 +124,288 @@
 </div>
 
 <div class="container-fluid px-4">
+
+    <!-- ── Sticky header ── -->
     <div class="sticky-top-custom">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h3>Step 2: Setup Fixed Slots per Class</h3>
-                <small class="text-muted">
-                    Pick a subject/teacher <em>or</em> "Free Period" to lock a slot before solving.
-                    Labs/blocks auto-extend downward if continuous &gt; 1.
-                </small>
-            </div>
+        <div class="row align-items-center g-2">
             <div class="col-md-4">
-                <select id="classSelector" class="form-select form-select-lg border-primary" onchange="switchClass()">
+                <!-- Tab switcher -->
+                <div class="d-flex gap-2">
+                    <button class="step-pill active" id="tab-unavail-btn" onclick="switchTab('unavail')">
+                        🚫 Teacher Unavailability
+                    </button>
+                    <button class="step-pill" id="tab-fixed-btn" onclick="switchTab('fixed')">
+                        📌 Fixed Slots
+                    </button>
+                </div>
+            </div>
+
+            <!-- Class selector (only shown for fixed-slots tab) -->
+            <div class="col-md-4" id="classSelectorWrap">
+                <select id="classSelector" class="form-select form-select-lg border-primary" onchange="switchClass()" style="display:none;">
                     {% for class_name in class_data.keys() %}
                     <option value="{{ loop.index0 }}">Class {{ class_name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 text-end">
-                <button id="genBtn" onclick="runSolver()" class="btn btn-success btn-lg w-100">Generate</button>
+
+            <!-- Teacher selector (only shown for unavailability tab) -->
+            <div class="col-md-4" id="teacherSelectorWrap">
+                <select id="teacherSelector" class="form-select form-select-lg border-danger" onchange="switchTeacher()">
+                    <option value="">— Select a Teacher —</option>
+                </select>
             </div>
+
+            <div class="col-md-4 text-end">
+                <button id="genBtn" onclick="runSolver()" class="btn btn-success btn-lg w-100">
+                    ⚡ Generate Timetable
+                </button>
+            </div>
+        </div>
+
+        <!-- Active tab hint -->
+        <div class="mt-2">
+            <small class="text-muted" id="tab-hint-unavail">
+                Select a teacher, then use the <strong>dropdowns</strong> to pick which periods they are unavailable on each day.
+                Hold <kbd>Ctrl</kbd> (or <kbd>Cmd</kbd>) to select multiple. These slots will be completely skipped for that teacher.
+            </small>
+            <small class="text-muted" id="tab-hint-fixed" style="display:none;">
+                Pick a subject/teacher <em>or</em> "Free Period" to lock a slot before solving.
+                Labs/blocks auto-extend downward if continuous &gt; 1.
+            </small>
         </div>
     </div>
 
-    <div class="table-responsive mt-3">
-        <table class="table table-bordered bg-white">
-            <thead class="table-dark text-center">
-                <tr>
-                    <th style="width: 80px;">Period</th>
-                    {% for d in range(days) %}<th>Day {{ d + 1 }}</th>{% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in range(periods) %}
-                <tr>
-                    <td class="fw-bold bg-light text-center align-middle">P{{ p + 1 }}</td>
-                    {% for d in range(days) %}
-                    <td>
-                        <div class="slot-card" data-slot="{{d}}-{{p}}">
-                            <!-- Fixed badge shown when slot is locked -->
-                            <div class="fixed-badge-wrap mb-1" style="min-height:18px;"></div>
-                            <select class="form-select form-select-sm teacher-select" data-slot="{{d}}-{{p}}">
-                                <!-- Options injected by JS -->
-                            </select>
-                            <!-- Shown only when __event__ is selected -->
-                            <input type="text" class="form-control form-control-sm event-label-input"
-                                   placeholder="Event name (e.g. Moral Class)"
-                                   data-slot="{{d}}-{{p}}"
-                                   style="display:none;">
+    <!-- ══════════════════════════════════════════════════════
+         TAB 1 — TEACHER UNAVAILABILITY
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-unavail" class="mt-3">
+        <div id="unavail-placeholder" class="text-center py-5 text-muted">
+            <div style="font-size:3rem;">👆</div>
+            <p class="mt-2">Select a teacher above to configure their unavailable periods.</p>
+        </div>
+
+        <div id="unavail-grid-wrap" style="display:none;">
+            <!-- Teacher label + clear button -->
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div>
+                    <span style="font-weight:700; font-size:1rem;" id="activeTeacherLabel"></span>
+                    <span class="ms-2 text-muted" style="font-size:0.82rem;">— select unavailable periods per day below</span>
+                </div>
+                <button class="btn btn-sm btn-outline-danger ms-auto" onclick="clearTeacherUnavail()">
+                    🗑 Clear All
+                </button>
+            </div>
+
+            <!-- One card per day, each with a multi-select of period options -->
+            <div class="row g-3" id="unavail-day-cards">
+                {% set day_names_list = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"] %}
+                {% for d in range(days) %}
+                <div class="col-sm-6 col-md-4 col-lg-2">
+                    <div class="unavail-day-card">
+                        <div class="day-title">
+                            {{ day_names_list[d] if d < 7 else "Day " ~ (d+1) }}
+                            <span class="unavail-count-badge" id="badge-day-{{ d }}">0</span>
                         </div>
-                    </td>
-                    {% endfor %}
-                </tr>
+                        <select multiple
+                                size="{{ periods }}"
+                                id="unavail-select-day-{{ d }}"
+                                data-day="{{ d }}"
+                                onchange="onUnavailChange(this)">
+                            {% for p in range(periods) %}
+                            <option value="{{ p }}">P{{ p + 1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+
+            <p class="text-muted mt-3" style="font-size:0.78rem;">
+                💡 Hold <kbd>Ctrl</kbd> / <kbd>Cmd</kbd> to select multiple periods. Click a selected period again to deselect.
+            </p>
+        </div>
     </div>
-</div>
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 2 — FIXED SLOTS (original, untouched)
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-fixed" class="mt-3" style="display:none;">
+        <div class="table-responsive">
+            <table class="table table-bordered bg-white">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th style="width: 80px;">Period</th>
+                        {% for d in range(days) %}<th>
+                            {{ ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][d] if d < 7 else "Day " ~ (d+1) }}
+                        </th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in range(periods) %}
+                    <tr>
+                        <td class="fw-bold bg-light text-center align-middle">P{{ p + 1 }}</td>
+                        {% for d in range(days) %}
+                        <td>
+                            <div class="slot-card" data-slot="{{d}}-{{p}}">
+                                <div class="fixed-badge-wrap mb-1" style="min-height:18px;"></div>
+                                <select class="form-select form-select-sm teacher-select" data-slot="{{d}}-{{p}}">
+                                </select>
+                                <input type="text" class="form-control form-control-sm event-label-input"
+                                       placeholder="Event name (e.g. Moral Class)"
+                                       data-slot="{{d}}-{{p}}"
+                                       style="display:none;">
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
 
 <script>
-const classInfo  = JSON.parse('{{ class_data | tojson | safe }}');
-const classKeys  = Object.keys(classInfo);
-const storage    = {};   // storage[clsIdx][slot] = { label, teacher_id, is_free, is_event }
+// ══════════════════════════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════════════════════════
+const classInfo = JSON.parse('{{ class_data | tojson | safe }}');
+const classKeys = Object.keys(classInfo);
 
 const periodsMeta = document.querySelector('meta[name="periods-count"]');
 let NUM_PERIODS = periodsMeta ? parseInt(periodsMeta.content, 10) : 8;
 if (isNaN(NUM_PERIODS) || NUM_PERIODS < 1) NUM_PERIODS = 8;
 
-// ─── BUILD DROPDOWN OPTIONS FOR A CLASS ───────────────────────────────────────
+// Fixed slots: storage[clsIdx][slot] = { label, teacher_id, is_free, is_event }
+const storage = {};
+
+// Unavailability: unavailStorage[teacher_id] = Set of "d-p" slot strings
+const unavailStorage = {};
+
+// Master teacher list built from all classes: { id -> { name, subjects } }
+const allTeachers = {};
+classKeys.forEach(cname => {
+    (classInfo[cname] || []).forEach(t => {
+        const tid = String(t.teacher_id);
+        if (!allTeachers[tid]) {
+            allTeachers[tid] = { name: t.teacher, subjects: [] };
+        }
+        if (t.subject && !allTeachers[tid].subjects.includes(t.subject)) {
+            allTeachers[tid].subjects.push(t.subject);
+        }
+    });
+});
+
+// ── Populate teacher dropdown ──────────────────────────────────────────────────
+const teacherSel = document.getElementById('teacherSelector');
+Object.entries(allTeachers)
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .forEach(([tid, info]) => {
+        const opt = document.createElement('option');
+        opt.value = tid;
+        opt.textContent = `${info.name} (${info.subjects.join(', ')})`;
+        teacherSel.appendChild(opt);
+    });
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ══════════════════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+    const isUnavail = tab === 'unavail';
+    document.getElementById('tab-unavail').style.display     = isUnavail ? '' : 'none';
+    document.getElementById('tab-fixed').style.display       = isUnavail ? 'none' : '';
+    document.getElementById('tab-unavail-btn').classList.toggle('active', isUnavail);
+    document.getElementById('tab-fixed-btn').classList.toggle('active', !isUnavail);
+    document.getElementById('tab-hint-unavail').style.display = isUnavail ? '' : 'none';
+    document.getElementById('tab-hint-fixed').style.display   = isUnavail ? 'none' : '';
+    document.getElementById('teacherSelectorWrap').style.display = isUnavail ? '' : 'none';
+    document.getElementById('classSelector').style.display        = isUnavail ? 'none' : '';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  UNAVAILABILITY TAB LOGIC
+// ══════════════════════════════════════════════════════════════════════════════
+let currentTeacherId = null;
+
+function switchTeacher() {
+    const tid = teacherSel.value;
+    currentTeacherId = tid || null;
+
+    const placeholder = document.getElementById('unavail-placeholder');
+    const gridWrap    = document.getElementById('unavail-grid-wrap');
+
+    if (!tid) {
+        placeholder.style.display = '';
+        gridWrap.style.display    = 'none';
+        return;
+    }
+
+    placeholder.style.display = 'none';
+    gridWrap.style.display    = '';
+
+    const info = allTeachers[tid];
+    document.getElementById('activeTeacherLabel').textContent =
+        `${info.name} (${info.subjects.join(', ')})`;
+
+    // Initialise storage for this teacher if needed
+    if (!unavailStorage[tid]) unavailStorage[tid] = {};
+
+    // Restore selections in each day's dropdown
+    document.querySelectorAll('[id^="unavail-select-day-"]').forEach(sel => {
+        const day = sel.dataset.day;
+        const saved = (unavailStorage[tid] && unavailStorage[tid][day]) || [];
+        Array.from(sel.options).forEach(opt => {
+            opt.selected = saved.includes(Number(opt.value));
+        });
+        refreshDayBadge(day, sel);
+    });
+}
+
+function onUnavailChange(sel) {
+    if (!currentTeacherId) return;
+    const day = sel.dataset.day;
+    if (!unavailStorage[currentTeacherId]) unavailStorage[currentTeacherId] = {};
+    // Save selected period indices for this day
+    unavailStorage[currentTeacherId][day] = Array.from(sel.selectedOptions).map(o => Number(o.value));
+    refreshDayBadge(day, sel);
+}
+
+function refreshDayBadge(day, sel) {
+    const badge = document.getElementById(`badge-day-${day}`);
+    if (!badge) return;
+    const count = sel.selectedOptions.length;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+function clearTeacherUnavail() {
+    if (!currentTeacherId) return;
+    unavailStorage[currentTeacherId] = {};
+    document.querySelectorAll('[id^="unavail-select-day-"]').forEach(sel => {
+        Array.from(sel.options).forEach(o => o.selected = false);
+        refreshDayBadge(sel.dataset.day, sel);
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  FIXED SLOTS TAB LOGIC  (original — untouched)
+// ══════════════════════════════════════════════════════════════════════════════
 function buildOptions(teacherSelect, teachersForClass) {
     teacherSelect.innerHTML = '';
-
-    // 1. "Not Fixed" – default
     const defaultOpt = document.createElement('option');
-    defaultOpt.value = '__none__';
-    defaultOpt.textContent = '— Not Fixed —';
+    defaultOpt.value = '__none__'; defaultOpt.textContent = '— Not Fixed —';
     teacherSelect.appendChild(defaultOpt);
 
-    // 2. "Free Period" – filler teacher credit goes down
     const freeOpt = document.createElement('option');
-    freeOpt.value = '__free__';
-    freeOpt.textContent = '🟡 Free Period';
+    freeOpt.value = '__free__'; freeOpt.textContent = '🟡 Free Period';
     teacherSelect.appendChild(freeOpt);
 
-    // 3. "Event / No Teacher" – no credits touched at all
     const eventOpt = document.createElement('option');
-    eventOpt.value = '__event__';
-    eventOpt.textContent = '🟢 Event (No Teacher)';
+    eventOpt.value = '__event__'; eventOpt.textContent = '🟢 Event (No Teacher)';
     teacherSelect.appendChild(eventOpt);
 
-    // 4. Actual subject-teacher pairs
     teachersForClass.forEach(t => {
         const option = document.createElement('option');
         option.value = t.teacher_id;
@@ -177,14 +417,12 @@ function buildOptions(teacherSelect, teachersForClass) {
     });
 }
 
-// ─── APPLY VISUAL STYLE TO A CARD ─────────────────────────────────────────────
 function styleCard(card, mode) {
     card.classList.remove('auto-filled', 'fixed-free', 'fixed-event');
     const badgeWrap  = card.querySelector('.fixed-badge-wrap');
     const eventInput = card.querySelector('.event-label-input');
     badgeWrap.innerHTML = '';
     eventInput.style.display = 'none';
-
     if (mode === 'subject') {
         card.classList.add('auto-filled');
         badgeWrap.innerHTML = '<span class="fixed-badge badge-fixed-subject">📌 Fixed</span>';
@@ -198,21 +436,16 @@ function styleCard(card, mode) {
     }
 }
 
-// ─── SWITCH CLASS ──────────────────────────────────────────────────────────────
 function switchClass() {
     const clsIdx = document.getElementById('classSelector').value;
     const currentClassName = classKeys[clsIdx];
     const teachersForClass  = classInfo[currentClassName] || [];
-
     if (!storage[clsIdx]) storage[clsIdx] = {};
-
     document.querySelectorAll('.slot-card').forEach(card => {
         const teacherSelect = card.querySelector('.teacher-select');
         const eventInput    = card.querySelector('.event-label-input');
         const slot          = card.dataset.slot;
-
         buildOptions(teacherSelect, teachersForClass);
-
         const saved = storage[clsIdx][slot];
         if (saved) {
             teacherSelect.value = saved.teacher_id;
@@ -229,35 +462,18 @@ function switchClass() {
     });
 }
 
-// ─── HANDLE SELECTION CHANGE ───────────────────────────────────────────────────
 document.addEventListener('change', function(e) {
     const target = e.target;
     if (!target.classList.contains('teacher-select')) return;
-
     const card   = target.closest('.slot-card');
     if (!card) return;
-
     const slot   = card.dataset.slot;
     const [day, period] = slot.split('-').map(Number);
     const clsIdx = document.getElementById('classSelector').value;
-
     if (!storage[clsIdx]) storage[clsIdx] = {};
-
     const selectedVal = target.value;
-
-    if (selectedVal === '__none__') {
-        delete storage[clsIdx][slot];
-        styleCard(card, 'default');
-        return;
-    }
-
-    if (selectedVal === '__free__') {
-        storage[clsIdx][slot] = { label: 'Free', teacher_id: '__free__', is_free: true, is_event: false };
-        styleCard(card, 'free');
-        return;
-    }
-
-    // ── Event / No Teacher ───────────────────────────────────────────────────
+    if (selectedVal === '__none__') { delete storage[clsIdx][slot]; styleCard(card, 'default'); return; }
+    if (selectedVal === '__free__') { storage[clsIdx][slot] = { label: 'Free', teacher_id: '__free__', is_free: true, is_event: false }; styleCard(card, 'free'); return; }
     if (selectedVal === '__event__') {
         const eventInput = card.querySelector('.event-label-input');
         styleCard(card, 'event');
@@ -265,38 +481,26 @@ document.addEventListener('change', function(e) {
         storage[clsIdx][slot] = { label, teacher_id: '__event__', is_free: false, is_event: true };
         return;
     }
-
-    // ── Subject/Teacher selected ─────────────────────────────────────────────
     const selectedOption = target.options[target.selectedIndex];
     const subject    = selectedOption.dataset.subject;
     const continuous = parseInt(selectedOption.dataset.continuous) || 1;
-
-    // Guard: block if this subject already fully fixed
     const currentClassName = classKeys[clsIdx];
     const teachersForClass = classInfo[currentClassName] || [];
     const teacherEntry = teachersForClass.find(t => String(t.teacher_id) === String(selectedVal));
     const maxHours = teacherEntry ? teacherEntry.hours : 999;
-
     let alreadyFixed = 0;
     for (let s in storage[clsIdx]) {
-        if (s !== slot && storage[clsIdx][s] && String(storage[clsIdx][s].teacher_id) === String(selectedVal)) {
-            alreadyFixed++;
-        }
+        if (s !== slot && storage[clsIdx][s] && String(storage[clsIdx][s].teacher_id) === String(selectedVal)) alreadyFixed++;
     }
-
     if (alreadyFixed >= maxHours) {
         alert('⚠️ "' + subject + '" only has ' + maxHours + ' period(s).\nAll are already fixed in other slots!');
-        target.value = '__none__';
-        styleCard(card, 'default');
-        return;
+        target.value = '__none__'; styleCard(card, 'default'); return;
     }
-
     storage[clsIdx][slot] = { label: subject, teacher_id: selectedVal, is_free: false, is_event: false };
     styleCard(card, 'subject');
-
     if (continuous > 1) {
         for (let i = 1; i < continuous; i++) {
-            const nextP  = period + i;
+            const nextP = period + i;
             if (nextP >= NUM_PERIODS) break;
             const nextSlot = `${day}-${nextP}`;
             const nextCard = document.querySelector(`.slot-card[data-slot="${nextSlot}"]`);
@@ -308,10 +512,9 @@ document.addEventListener('change', function(e) {
     }
 });
 
-// ─── UPDATE EVENT LABEL AS USER TYPES ─────────────────────────────────────────
 document.addEventListener('input', function(e) {
     if (!e.target.classList.contains('event-label-input')) return;
-    const card   = e.target.closest('.slot-card');
+    const card = e.target.closest('.slot-card');
     if (!card) return;
     const slot   = card.dataset.slot;
     const clsIdx = document.getElementById('classSelector').value;
@@ -320,22 +523,31 @@ document.addEventListener('input', function(e) {
     }
 });
 
-// ─── RUN SOLVER ───────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  RUN SOLVER — sends both fixed_slots AND teacher_unavailability
+// ══════════════════════════════════════════════════════════════════════════════
 function runSolver() {
     const btn    = document.getElementById('genBtn');
     const loader = document.getElementById('loader');
 
-    // Build payload: send ALL fixed slots (subject AND free), skip only "Not Fixed"
+    // Build fixed slots payload
     const cleanStorage = {};
     for (let cls in storage) {
         cleanStorage[cls] = {};
         for (let slot in storage[cls]) {
             const item = storage[cls][slot];
-            // Include free periods AND subject periods — skip only un-set slots
-            if (item && item.teacher_id !== '__none__') {
-                cleanStorage[cls][slot] = item;
-            }
+            if (item && item.teacher_id !== '__none__') cleanStorage[cls][slot] = item;
         }
+    }
+
+    // Build unavailability payload: { teacher_id: ["d-p", "d-p", ...] }
+    const unavailPayload = {};
+    for (let tid in unavailStorage) {
+        const slots = [];
+        for (let day in unavailStorage[tid]) {
+            (unavailStorage[tid][day] || []).forEach(p => slots.push(`${day}-${p}`));
+        }
+        if (slots.length > 0) unavailPayload[tid] = slots;
     }
 
     btn.disabled = true;
@@ -344,7 +556,10 @@ function runSolver() {
     fetch('/run-final-solver', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fixed_slots: cleanStorage })
+        body: JSON.stringify({
+            fixed_slots: cleanStorage,
+            teacher_unavailability: unavailPayload
+        })
     })
     .then(res => res.json())
     .then(data => {

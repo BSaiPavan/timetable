@@ -1,4 +1,3 @@
-
 import random
 import copy
 import logging
@@ -28,7 +27,7 @@ except ImportError:
 def generate_timetable_ortools(
     No_of_classes, No_of_days_in_week, No_of_periods,
     teacher_list, class_teacher_periods, lab_teacher_periods,
-    subject_map, fixed_periods=None, time_limit_seconds=60
+    subject_map, fixed_periods=None, teacher_unavailability=None, time_limit_seconds=60
 ):
     total_slots = No_of_days_in_week * No_of_periods
     model = cp_model.CpModel()
@@ -37,6 +36,27 @@ def generate_timetable_ortools(
     Timetable = [[0] * No_of_classes for _ in range(total_slots)]
     fixed_set = set()
     teacher_busy = {tid: set() for tid in teacher_list}
+
+    # ── Inject teacher unavailability into teacher_busy ─────────────────────
+    if teacher_unavailability:
+        for tid_str, slots in teacher_unavailability.items():
+            try:
+                tid = int(tid_str)
+            except ValueError:
+                continue
+            if tid not in teacher_busy:
+                teacher_busy[tid] = set()
+            for slot_str in slots:
+                try:
+                    if '-' in str(slot_str):
+                        d, p = map(int, str(slot_str).split('-'))
+                        flat = d * No_of_periods + p
+                    else:
+                        flat = int(slot_str)
+                    if 0 <= flat < total_slots:
+                        teacher_busy[tid].add(flat)
+                except Exception:
+                    continue
 
     if fixed_periods:
         for cls_idx_str, slots in fixed_periods.items():
@@ -235,11 +255,30 @@ sys.setrecursionlimit(50000)
 def generate_timetable_backtrack(
     No_of_classes, No_of_days_in_week, No_of_periods,
     teacher_list, class_teacher_periods, lab_teacher_periods,
-    subject_map, fixed_periods=None
+    subject_map, fixed_periods=None, teacher_unavailability=None
 ):
     total_periods = No_of_days_in_week * No_of_periods
     Timetable = [[0] * No_of_classes for _ in range(total_periods)]
     main_teacher_list = [copy.deepcopy(teacher_list) for _ in range(total_periods)]
+
+    # ── Inject teacher unavailability — mark teacher as busy at those slots ──
+    if teacher_unavailability:
+        for tid_str, slots in teacher_unavailability.items():
+            try:
+                tid = int(tid_str)
+            except ValueError:
+                continue
+            for slot_str in slots:
+                try:
+                    if '-' in str(slot_str):
+                        d, p = map(int, str(slot_str).split('-'))
+                        flat = d * No_of_periods + p
+                    else:
+                        flat = int(slot_str)
+                    if 0 <= flat < total_periods and tid in main_teacher_list[flat]:
+                        main_teacher_list[flat][tid]['available'] = False
+                except Exception:
+                    continue
 
     if fixed_periods:
         for cls_idx_str, slots in fixed_periods.items():
@@ -410,25 +449,25 @@ def generate_timetable_backtrack(
 def generate_timetable(
     No_of_classes, No_of_days_in_week, No_of_periods,
     teacher_list, class_teacher_periods, lab_teacher_periods,
-    subject_map, fixed_periods=None
+    subject_map, fixed_periods=None, teacher_unavailability=None
 ):
     if ORTOOLS_AVAILABLE:
         return generate_timetable_ortools(
             No_of_classes, No_of_days_in_week, No_of_periods,
             teacher_list, class_teacher_periods, lab_teacher_periods,
-            subject_map, fixed_periods
+            subject_map, fixed_periods, teacher_unavailability
         )
     return generate_timetable_backtrack(
         No_of_classes, No_of_days_in_week, No_of_periods,
         teacher_list, class_teacher_periods, lab_teacher_periods,
-        subject_map, fixed_periods
+        subject_map, fixed_periods, teacher_unavailability
     )
 
 
 def generate_timetable_with_retry(
     No_of_classes, No_of_days_in_week, No_of_periods,
     teacher_list, class_teacher_periods, lab_teacher_periods,
-    subject_map, fixed_periods=None, max_attempts=10
+    subject_map, fixed_periods=None, teacher_unavailability=None, max_attempts=10
 ):
     if ORTOOLS_AVAILABLE:
         logging.info("OR-Tools active — single attempt with 60s limit")
@@ -438,7 +477,7 @@ def generate_timetable_with_retry(
             copy.deepcopy(class_teacher_periods),
             copy.deepcopy(lab_teacher_periods),
             copy.deepcopy(subject_map),
-            fixed_periods,
+            fixed_periods, teacher_unavailability,
             time_limit_seconds=60
         )
     for attempt in range(1, max_attempts + 1):
@@ -449,7 +488,7 @@ def generate_timetable_with_retry(
             copy.deepcopy(class_teacher_periods),
             copy.deepcopy(lab_teacher_periods),
             copy.deepcopy(subject_map),
-            fixed_periods
+            fixed_periods, teacher_unavailability
         )
         if result is not None:
             logging.info(f"Solved on attempt {attempt}")
