@@ -188,6 +188,53 @@
         /* multi-class badge on slot cards */
         .badge-multi { background:#fde68a; color:#92400e; }
 
+        /* ── Sync Groups panel ── */
+        .sync-group-card {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .sync-group-card .sg-header {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #1e3a5f;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .sg-members-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .sg-member-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #e0f2fe; color: #0369a1;
+            border-radius: 20px; padding: 3px 10px;
+            font-size: 0.78rem; font-weight: 600;
+        }
+        .sg-member-chip .rm { cursor:pointer; opacity:.6; font-weight:700; }
+        .sg-member-chip .rm:hover { opacity:1; color:#dc3545; }
+        .sg-member-chip.type-merged { background:#dcfce7; color:#15803d; }
+        .sg-subject-sel-wrap {
+            background: #f8faff;
+            border: 1px dashed #93c5fd;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+        }
+        .sg-subject-sel-wrap select { font-size: 0.82rem; }
+        .sg-type-badge {
+            border-radius: 20px; padding: 2px 9px;
+            font-size: 0.7rem; font-weight: 700; display: inline-block;
+        }
+        .sg-type-split  { background:#fde68a; color:#92400e; }
+        .sg-type-merged { background:#d1fae5; color:#065f46; }
+
     </style>
     <meta name="periods-count" content="{{ periods }}">
     <meta name="days-count" content="{{ days }}">
@@ -431,6 +478,59 @@
                 </div>
             </div>
         </div>
+        <hr class="mt-0 mb-3">
+
+        <!-- ── Sync Groups panel (collapsible) ── -->
+        <div class="mb-3">
+            <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;"
+                 onclick="toggleSyncPanel()">
+                <span style="font-size:1.1rem;">🔗</span>
+                <strong style="font-size:.95rem;">Sync Groups</strong>
+                <small class="text-muted">— schedule subjects simultaneously (electives, shared classes)</small>
+                <span id="syncPanelChevron" class="ms-auto text-muted">▼</span>
+            </div>
+
+            <div id="syncPanel" style="display:none;">
+                <div class="card border-0 bg-white shadow-sm mb-2">
+                    <div class="card-body py-3">
+
+                        <p class="text-muted mb-3" style="font-size:.82rem;">
+                            Add a group of subjects that must always be scheduled <strong>at the same time-slots</strong>.<br>
+                            <strong>Split-group</strong> — e.g. II Language block: Hindi/Telugu/Kannada/English all run simultaneously, students attend their chosen one.<br>
+                            <strong>Merged class</strong> — e.g. Class 1 and Class 2 attend the same lecture together at the same slot.
+                        </p>
+
+                        <!-- Create sync group form -->
+                        <div class="p-3 rounded mb-3" style="background:#f0f4ff; border:1px solid #c7d7ff;">
+                            <div class="row g-2 align-items-end mb-2">
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-muted mb-1" style="font-size:.75rem;">GROUP NAME</label>
+                                    <input id="sgNameInput" type="text" class="form-control form-control-sm"
+                                           placeholder="e.g. II Language, Shared Lecture">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted mb-1" style="font-size:.75rem;">TYPE</label>
+                                    <select id="sgTypeInput" class="form-select form-select-sm">
+                                        <option value="split">🟡 Split-group — students split (different subjects same slot)</option>
+                                        <option value="merged">🟢 Merged class — all attend same subject together</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted mb-1" style="font-size:.75rem;">&nbsp;</label>
+                                    <button class="btn btn-primary btn-sm w-100" onclick="createSyncGroup()">+ Create Group</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Existing sync groups list -->
+                        <div id="syncGroupsList">
+                            <p class="text-muted mb-0" style="font-size:.82rem;">No sync groups yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <hr class="mt-0 mb-3">
 
         <div class="table-responsive">
@@ -1039,7 +1139,8 @@ function runSolver() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             fixed_slots: cleanStorage,
-            teacher_unavailability: unavailPayload
+            teacher_unavailability: unavailPayload,
+            elective_bundles: buildSyncGroupsPayload()
         })
     })
     .then(res => res.json())
@@ -1210,6 +1311,222 @@ function renderGlobalSlotList() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+//  SYNC GROUPS
+//  A sync group = a set of (class_idx, subject, teacher_id) entries that the
+//  solver MUST place at the same K flat slot indices.
+//
+//  Two types:
+//    "split"  — students in one or more classes split into sub-groups, each
+//               attending a different subject at the same time.
+//               Example: II Language block — Hindi/Telugu/Kannada/English all
+//               run simultaneously; each teacher is marked busy that slot.
+//    "merged" — two or more whole classes attend the SAME subject together
+//               (same teacher, same room). The solver places that subject for
+//               all involved classes at the same slots.
+//
+//  Data model:
+//    syncGroups = [{
+//      name: "II Language",
+//      type: "split" | "merged",
+//      members: [
+//        { classIdx, className, subject, teacherId, teacherName },
+//        ...
+//      ]
+//    }]
+// ══════════════════════════════════════════════════════════════════════════════
+
+let syncGroups = [];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Build flat list of all (classIdx, subject, teacherId, teacherName) entries
+// from classInfo, so user can pick from a dropdown.
+function getAllSubjectEntries() {
+    const entries = [];
+    classKeys.forEach((cname, ci) => {
+        (classInfo[cname] || []).forEach(t => {
+            entries.push({
+                classIdx:    ci,
+                className:   cname,
+                subject:     t.subject,
+                teacherId:   String(t.teacher_id),
+                teacherName: t.teacher
+            });
+        });
+    });
+    return entries;
+}
+
+function toggleSyncPanel() {
+    const panel   = document.getElementById('syncPanel');
+    const chevron = document.getElementById('syncPanelChevron');
+    const open    = panel.style.display === 'none';
+    panel.style.display = open ? '' : 'none';
+    chevron.textContent = open ? '▲' : '▼';
+    if (open) renderSyncGroups();
+}
+
+function createSyncGroup() {
+    const name = document.getElementById('sgNameInput').value.trim();
+    const type = document.getElementById('sgTypeInput').value;
+    if (!name) { showToast('Enter a group name.', 'warning'); return; }
+    if (syncGroups.find(g => g.name === name)) {
+        showToast('A group with that name already exists.', 'warning'); return;
+    }
+    syncGroups.push({ name, type, members: [] });
+    saveSession();
+    renderSyncGroups();
+    document.getElementById('sgNameInput').value = '';
+    showToast(`Group "${name}" created. Now add subjects to it below.`, 'success');
+}
+
+function deleteSyncGroup(idx) {
+    syncGroups.splice(idx, 1);
+    saveSession();
+    renderSyncGroups();
+}
+
+function addMemberToGroup(groupIdx) {
+    const g = syncGroups[groupIdx];
+    if (!g) return;
+
+    const selId  = `sg-add-sel-${groupIdx}`;
+    const sel    = document.getElementById(selId);
+    if (!sel || !sel.value) { showToast('Select a subject to add.', 'warning'); return; }
+
+    const [ciStr, tidStr, subj] = sel.value.split('||');
+    const ci     = parseInt(ciStr);
+    const cname  = classKeys[ci];
+    const entry  = (classInfo[cname] || []).find(
+        t => String(t.teacher_id) === tidStr && t.subject === subj
+    );
+    if (!entry) { showToast('Subject not found.', 'warning'); return; }
+
+    // Prevent exact duplicate
+    const isDup = g.members.some(m =>
+        m.classIdx === ci && m.subject === subj && m.teacherId === tidStr
+    );
+    if (isDup) { showToast('Already in this group.', 'warning'); return; }
+
+    g.members.push({
+        classIdx:    ci,
+        className:   cname,
+        subject:     subj,
+        teacherId:   tidStr,
+        teacherName: entry.teacher
+    });
+    saveSession();
+    renderSyncGroups();
+}
+
+function removeMemberFromGroup(groupIdx, memberIdx) {
+    if (syncGroups[groupIdx]) {
+        syncGroups[groupIdx].members.splice(memberIdx, 1);
+        saveSession();
+        renderSyncGroups();
+    }
+}
+
+function buildMemberSelectHtml(groupIdx) {
+    // Group entries by class for optgroup display
+    const entries = getAllSubjectEntries();
+    const byClass = {};
+    entries.forEach(e => {
+        if (!byClass[e.className]) byClass[e.className] = [];
+        byClass[e.className].push(e);
+    });
+    let opts = '<option value="">— Select class / subject —</option>';
+    Object.entries(byClass).forEach(([cname, ents]) => {
+        opts += `<optgroup label="Class ${cname}">`;
+        ents.forEach(e => {
+            const val = `${e.classIdx}||${e.teacherId}||${e.subject}`;
+            opts += `<option value="${val}">${e.subject} (${e.teacherName})</option>`;
+        });
+        opts += '</optgroup>';
+    });
+    return `<div class="d-flex gap-2 mt-2 align-items-center">
+        <select id="sg-add-sel-${groupIdx}" class="form-select form-select-sm" style="max-width:340px;">${opts}</select>
+        <button class="btn btn-sm btn-outline-primary" onclick="addMemberToGroup(${groupIdx})">+ Add</button>
+    </div>`;
+}
+
+function renderSyncGroups() {
+    const list = document.getElementById('syncGroupsList');
+    if (!syncGroups.length) {
+        list.innerHTML = '<p class="text-muted mb-0" style="font-size:.82rem;">No sync groups yet.</p>';
+        return;
+    }
+    list.innerHTML = syncGroups.map((g, gi) => {
+        const typeLabel  = g.type === 'split'
+            ? '<span class="sg-type-badge sg-type-split">🟡 Split-group</span>'
+            : '<span class="sg-type-badge sg-type-merged">🟢 Merged class</span>';
+
+        const chips = g.members.map((m, mi) =>
+            `<span class="sg-member-chip ${g.type === 'merged' ? 'type-merged' : ''}">
+                Class ${m.className} · ${m.subject} · ${m.teacherName}
+                <span class="rm" onclick="removeMemberFromGroup(${gi},${mi})">✕</span>
+            </span>`
+        ).join('');
+
+        const hint = g.type === 'split'
+            ? `<small class="text-muted" style="font-size:.75rem;">All subjects fire at the same slots. Each teacher is marked busy. Students attend their assigned subject.</small>`
+            : `<small class="text-muted" style="font-size:.75rem;">All listed class-entries will be placed at the same slots (same teacher = shared room).</small>`;
+
+        return `<div class="sync-group-card">
+            <div class="sg-header">
+                <span>🔗 ${g.name} &nbsp; ${typeLabel}
+                    <span class="text-muted ms-2" style="font-size:.78rem; font-weight:400;">${g.members.length} subject(s)</span>
+                </span>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSyncGroup(${gi})">✕ Remove</button>
+            </div>
+            ${hint}
+            <div class="sg-members-wrap mt-2">${chips || '<span class="text-muted" style="font-size:.8rem;">No subjects added yet.</span>'}</div>
+            <div class="sg-subject-sel-wrap">
+                <div class="fw-bold mb-1" style="font-size:.75rem; color:#6c757d;">ADD SUBJECT TO THIS GROUP:</div>
+                ${buildMemberSelectHtml(gi)}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// Convert syncGroups to the format the solver expects (elective_bundles wire format)
+// Each sync group → one bundle with:
+//   name, periods_per_week (derived from the first member's hours in classInfo),
+//   class_assignments: {classIdx: subjectName}
+// The solver's existing elective_bundles logic handles the rest.
+function buildSyncGroupsPayload() {
+    return syncGroups.map(g => {
+        // periods_per_week: use the hours of the first member's subject from classInfo
+        let periodsPerWeek = 1;
+        if (g.members.length > 0) {
+            const m0 = g.members[0];
+            const cname = classKeys[m0.classIdx];
+            const entry = (classInfo[cname] || []).find(
+                t => String(t.teacher_id) === m0.teacherId && t.subject === m0.subject
+            );
+            if (entry && entry.hours) periodsPerWeek = parseInt(entry.hours) || 1;
+        }
+
+        // class_assignments: {classIdx: subjectName}
+        // For merged type, all classes get the same subject name (first member's subject)
+        // For split type, each member maps independently
+        const class_assignments = {};
+        g.members.forEach(m => {
+            class_assignments[m.classIdx] = m.subject;
+        });
+
+        return {
+            name:            g.name,
+            type:            g.type,
+            periodsPerWeek:  periodsPerWeek,
+            options:         [...new Set(g.members.map(m => m.subject))],
+            assignments:     class_assignments,
+            members:         g.members   // pass full member list for solver use
+        };
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 //  SESSION PERSISTENCE  (localStorage)
 // ══════════════════════════════════════════════════════════════════════════════
 const SESSION_KEY   = 'timetable_fixed_slots';
@@ -1224,8 +1541,9 @@ function saveSession() {
     try {
         localStorage.setItem(SESSION_KEY,    JSON.stringify(storage));
         localStorage.setItem(UNAVAIL_KEY,    JSON.stringify(unavailStorage));
-        localStorage.setItem('timetable_global_slots', JSON.stringify(globalSlots));
-        localStorage.setItem('timetable_groups',       JSON.stringify(groups));
+        localStorage.setItem('timetable_global_slots',    JSON.stringify(globalSlots));
+        localStorage.setItem('timetable_groups',          JSON.stringify(groups));
+        localStorage.setItem('timetable_sync_groups',     JSON.stringify(syncGroups));
         localStorage.setItem(SESSION_TOKEN,  CURRENT_TOKEN);
     } catch(e) {}
 }
@@ -1234,7 +1552,6 @@ function loadSession() {
     try {
         const storedToken = localStorage.getItem(SESSION_TOKEN);
         if (storedToken !== CURRENT_TOKEN) {
-            // New timetable data — discard everything from the old session
             clearSession(true);
             return;
         }
@@ -1250,6 +1567,8 @@ function loadSession() {
         if (savedGlobal) { globalSlots = JSON.parse(savedGlobal); renderGlobalSlotList(); }
         const savedGroups = localStorage.getItem('timetable_groups');
         if (savedGroups) { groups = JSON.parse(savedGroups); rebuildGroupOptGroup(); }
+        const savedBundles = localStorage.getItem('timetable_sync_groups');
+        if (savedBundles) { syncGroups = JSON.parse(savedBundles); renderSyncGroups(); }
     } catch(e) {}
 }
 
@@ -1258,6 +1577,7 @@ function clearSession(silent) {
     localStorage.removeItem(UNAVAIL_KEY);
     localStorage.removeItem('timetable_global_slots');
     localStorage.removeItem('timetable_groups');
+    localStorage.removeItem('timetable_sync_groups');
     localStorage.removeItem(SESSION_TOKEN);
     if (!silent) showToast('Session cleared.', 'success');
 }

@@ -442,12 +442,18 @@ def success_summary():
     # ── Build teacher_slot_map: {teacher_name: ["classIdx-slotIdx", ...]} ──────
     # We need to know which teacher teaches each subject in each class
     organized = stored.get('organized', {})
-    # subject->teacher lookup per class
-    subj_teacher = {}  # (class_idx, subject_lower) -> teacher_name
+    # subject->teacher lookup per class (also store normalized key for labs)
+    subj_teacher = {}  # (class_idx, subject_lower_stripped) -> teacher_name
     for cidx, cname in enumerate(organized.keys()):
         for t in organized[cname]:
+            # Primary key: exact subject name lowered
             key = (cidx, t['subject'].lower().strip())
             subj_teacher[key] = t['teacher']
+            # Secondary key: strip "(lab N)" suffix so "Physics (Lab 1)" matches "Physics"
+            import re as _re
+            stripped = _re.sub(r'\s*\(lab[^)]*\)', '', t['subject'], flags=_re.IGNORECASE).lower().strip()
+            if stripped != t['subject'].lower().strip():
+                subj_teacher[(cidx, stripped)] = t['teacher']
 
     teacher_slot_map = {}   # teacher_name -> [classIdx-slotIdx]
     teacher_names_set = set()
@@ -462,12 +468,17 @@ def success_summary():
                 if not cell or cell == 0 or str(cell).lower() in ('free', 'f', '0'):
                     continue
                 cell_str = str(cell).strip()
-                key = (cidx, cell_str.lower().strip())
-                tname = subj_teacher.get(key)
-                # Fuzzy match: check if cell_str starts with any known subject
+                import re as _re
+                cell_norm = _re.sub(r'\s*\(lab[^)]*\)', '', cell_str, flags=_re.IGNORECASE).lower().strip()
+
+                # Try exact match first, then stripped match, then prefix match
+                key_exact   = (cidx, cell_str.lower().strip())
+                key_stripped = (cidx, cell_norm)
+                tname = subj_teacher.get(key_exact) or subj_teacher.get(key_stripped)
                 if not tname:
+                    # prefix fallback: find any subject that starts with first 6 chars
                     for (c2, subj), tn in subj_teacher.items():
-                        if c2 == cidx and cell_str.lower().startswith(subj[:6]):
+                        if c2 == cidx and cell_norm.startswith(subj[:6]):
                             tname = tn
                             break
                 if tname:
@@ -581,6 +592,7 @@ def run_final_solver():
         payload        = request.get_json()
         fixed_data     = payload.get('fixed_slots', {})
         unavail_data   = payload.get('teacher_unavailability', {})
+        elective_bundles = payload.get('elective_bundles', [])
         
         if not os.path.exists("temp_web_data.json"):
             return jsonify({"status": "error", "message": "Session expired. Please restart."}), 400
@@ -597,7 +609,20 @@ def run_final_solver():
             fixed_data
         )
 
-        # --- DEBUG LOGGING: Save the exact data going into the solver ---
+        # ── Convert sync_groups / elective_bundles from frontend to solver format ─
+        solver_bundles = []
+        if elective_bundles:
+            for b in elective_bundles:
+                solver_bundles.append({
+                    "name":             b.get("name", ""),
+                    "type":             b.get("type", "split"),
+                    "periodsPerWeek":   int(b.get("periodsPerWeek", 1)),
+                    "members":          b.get("members", []),
+                    # Legacy fields kept for backward compat with old backtracker path
+                    "assignments":      b.get("assignments", {}),
+                })
+
+        # --- DEBUG LOGGING ---
         debug_payload = {
             "No_of_classes": No_of_classes,
             "days": stored['days'],
@@ -605,18 +630,19 @@ def run_final_solver():
             "teacher_list": t_list,
             "class_theory_workload": c_theory,
             "lab_periods": l_periods,
-            "subject_map": {str(k): v for k, v in subj_map.items()},  # Convert tuple keys to strings for JSON
-            "fixed_periods": fixed_data
+            "subject_map": {str(k): v for k, v in subj_map.items()},
+            "fixed_periods": fixed_data,
+            "elective_bundles": solver_bundles
         }
         with open("solver_input_debug.json", "w") as f:
             json.dump(debug_payload, f, indent=4)
-        # --------------------------------------------------------------
 
         final_timetable = generate_timetable_with_retry(
             No_of_classes, stored['days'], stored['periods'], t_list,
             c_theory, l_periods, subj_map,
             fixed_periods=fixed_data,
-            teacher_unavailability=unavail_data
+            teacher_unavailability=unavail_data,
+            elective_bundles=solver_bundles
         )
 
         if final_timetable:
