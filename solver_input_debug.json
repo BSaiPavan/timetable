@@ -1,66 +1,38 @@
 {
-    "No_of_classes": 5,
+    "No_of_classes": 24,
     "days": 6,
     "periods": 6,
     "teacher_list": {
-        "8": {
-            "Name": "S6",
+        "2": {
+            "Name": "Gayatri Menon",
             "available": true
         },
-        "9": {
-            "Name": "S7",
+        "15": {
+            "Name": "Sunil Mehta",
             "available": true
         },
-        "4": {
-            "Name": "S2",
+        "12": {
+            "Name": "Sarala Bose",
             "available": true
         },
-        "7": {
-            "Name": "S5",
+        "18": {
+            "Name": "Vijay Saxena",
             "available": true
         },
-        "10": {
-            "Name": "S8",
-            "available": true
-        },
-        "11": {
-            "Name": "S9",
-            "available": true
-        },
-        "5": {
-            "Name": "S3",
+        "0": {
+            "Name": "Arjun Krishnaswamy",
             "available": true
         },
         "1000": {
             "Name": "f1",
             "available": true
         },
-        "6": {
-            "Name": "S4",
-            "available": true
-        },
-        "1": {
-            "Name": "S10",
-            "available": true
-        },
         "1001": {
             "Name": "f2",
             "available": true
         },
-        "2": {
-            "Name": "S11",
-            "available": true
-        },
         "1002": {
             "Name": "f3",
-            "available": true
-        },
-        "3": {
-            "Name": "S12",
-            "available": true
-        },
-        "0": {
-            "Name": "S1",
             "available": true
         },
         "1003": {
@@ -70,77 +42,442 @@
         "1004": {
             "Name": "f5",
             "available": true
+        },
+        "1005": {
+            "Name": "f6",
+            "available": true
+        },
+        "1006": {
+            "Name": "f7",
+            "available": true
+        },
+        "1007": {
+            "Name": "f8",
+            "available": true
+        },
+        "1008": {
+            "Name": "f9",
+            "available": true
+        },
+        "1009": {
+            "Name": "f10",
+            "available": true
+        },
+        "7": {
+            "Name": "Nalini Desai",
+            "available": true
+        },
+        "10": {
+            "Name": "Prakash Naidu",
+            "available": true
+        },
+        "14": {
+            "Name": "Smita Hegde",
+            "available": true
+        },
+        "1010": {
+            "Name": "f11",
+            "available": true
+        },
+        "1011": {
+            "Name": "f12",
+            "available": true
+        },
+        "1012": {
+            "Name": "f13",
+            "available": true
+        },
+        "1013": {
+            "Name": "f14",
+            "available": true
+        },
+        "1014": {
+            "Name": "f15",
+            "available": true
+        },
+        "16": {
+            "Name": "Thomas Mathew",
+            "available": true
+        },
+        "13": {
+            "Name": "Shalini Reddy",
+            "available": true
+        },
+        "19": {
+            "Name": "Vikram Tiwari",
+            "available": true
+        },
+        "6": {
+            "Name": "Meena Krishnan",
+            "available": true
+        },
+        "3": {
+            "Name": "Harish Pandey",
+            "available": true
+        },
+        "17": {
+            "Name": "Usha Trivedi",
+            "available": true
+        },
+        "4": {
+            "Name": "Kiran Nambiar",
+            "available": true
+        },
+        "1015": {
+            "Name": "f16",
+            "available": true
+        },
+        "5": {
+            "Name": "Lakshmi Iyer",
+            "available": true
+        },
+        "1": {
+            "Name": "Dinesh Choudhary",
+            "available": true
+        },
+        "9": {
+            "Name": "Pooja Bajaj",
+            "available": true
+        },
+        "11": {
+            "Name": "Ramesh Venkat",
+            "available": true
+        },
+        "8": {
+            "Name": "Nandini Rao",
+            "available": true
+        },
+        "1016": {
+            "Name": "f17",
+            "available": true
+        },
+        "1017": {
+            "Name": "f18",
+            "available": true
+        },
+        "1018": {
+            "Name": "f19",
+            "available": true
+        },
+        "1019": {
+            "Name": "f20",
+            "available": true
+        },
+        "1020": {
+            "Name": "f21",
+            "available": true
+        },
+        "1021": {
+            "Name": "f22",
+            "available": true
+        },
+        "1022": {
+            "Name": "f23",
+            "available": true
+        },
+        "1023": {
+            "Name": "f24",
+            "available": true
         }
     },
     "class_theory_workload": {
         "0": {
-            "8": 3,
-            "9": 3,
-            "4": 4,
-            "7": 4,
-            "10": 2,
-            "11": 3,
-            "5": 0,
-            "1000": 9
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1000": 16
         },
         "1": {
-            "8": 3,
-            "11": 6,
-            "6": 4,
-            "7": 4,
-            "9": 2,
-            "1": 0,
-            "1001": 13
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1001": 16
         },
         "2": {
-            "6": 4,
-            "1": 7,
-            "7": 5,
-            "5": 5,
-            "9": 2,
-            "2": 0,
-            "1002": 7
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1002": 16
         },
         "3": {
-            "3": 4,
-            "6": 4,
-            "2": 4,
-            "1": 2,
-            "0": 4,
-            "10": 2,
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
             "1003": 16
         },
         "4": {
-            "7": 5,
-            "5": 5,
-            "4": 5,
-            "0": 5,
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
             "1004": 16
+        },
+        "5": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1005": 16
+        },
+        "6": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1006": 16
+        },
+        "7": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1007": 16
+        },
+        "8": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1008": 16
+        },
+        "9": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 4,
+            "0": 2,
+            "1009": 16
+        },
+        "10": {
+            "7": 5,
+            "10": 5,
+            "14": 4,
+            "12": 5,
+            "18": 4,
+            "0": 3,
+            "1010": 6
+        },
+        "11": {
+            "7": 5,
+            "10": 5,
+            "14": 4,
+            "12": 5,
+            "18": 4,
+            "0": 3,
+            "1011": 6
+        },
+        "12": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 5,
+            "0": 4,
+            "7": 3,
+            "10": 0,
+            "1012": 6
+        },
+        "13": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 5,
+            "0": 4,
+            "7": 3,
+            "10": 0,
+            "1013": 6
+        },
+        "14": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 5,
+            "0": 4,
+            "7": 3,
+            "10": 0,
+            "1014": 6
+        },
+        "15": {
+            "16": 5,
+            "13": 5,
+            "19": 4,
+            "6": 5,
+            "3": 4,
+            "17": 3,
+            "4": 0,
+            "1015": 6
+        },
+        "16": {
+            "5": 5,
+            "1": 5,
+            "9": 4,
+            "11": 5,
+            "8": 5,
+            "4": 0,
+            "1016": 8
+        },
+        "17": {
+            "5": 5,
+            "1": 5,
+            "9": 4,
+            "11": 5,
+            "8": 5,
+            "4": 0,
+            "1017": 8
+        },
+        "18": {
+            "5": 5,
+            "1": 5,
+            "9": 4,
+            "11": 5,
+            "8": 5,
+            "4": 0,
+            "1018": 8
+        },
+        "19": {
+            "2": 5,
+            "15": 5,
+            "12": 4,
+            "18": 5,
+            "0": 5,
+            "7": 0,
+            "1019": 8
+        },
+        "20": {
+            "10": 5,
+            "14": 5,
+            "12": 5,
+            "18": 5,
+            "0": 4,
+            "1020": 4
+        },
+        "21": {
+            "10": 10,
+            "7": 5,
+            "14": 5,
+            "18": 4,
+            "1021": 12
+        },
+        "22": {
+            "2": 5,
+            "15": 5,
+            "12": 5,
+            "18": 5,
+            "0": 4,
+            "1022": 4
+        },
+        "23": {
+            "2": 5,
+            "7": 5,
+            "10": 5,
+            "14": 5,
+            "18": 4,
+            "1023": 12
         }
     },
     "lab_periods": {
-        "0": {
-            "4": [
-                6,
-                2,
-                1
-            ],
-            "5": [
-                2,
-                1,
-                1
-            ]
-        },
-        "1": {
-            "1": [
+        "10": {
+            "7": [
                 4,
                 2,
                 1
             ]
         },
-        "2": {
-            "2": [
-                6,
+        "11": {
+            "7": [
+                4,
+                2,
+                1
+            ]
+        },
+        "12": {
+            "10": [
+                4,
+                2,
+                1
+            ]
+        },
+        "13": {
+            "10": [
+                4,
+                2,
+                1
+            ]
+        },
+        "14": {
+            "10": [
+                4,
+                2,
+                1
+            ]
+        },
+        "15": {
+            "4": [
+                4,
+                2,
+                1
+            ]
+        },
+        "16": {
+            "4": [
+                4,
+                2,
+                1
+            ]
+        },
+        "17": {
+            "4": [
+                4,
+                2,
+                1
+            ]
+        },
+        "18": {
+            "4": [
+                4,
+                2,
+                1
+            ]
+        },
+        "19": {
+            "7": [
+                4,
+                2,
+                1
+            ]
+        },
+        "20": {
+            "14": [
+                4,
+                2,
+                1
+            ],
+            "12": [
+                4,
+                2,
+                1
+            ]
+        },
+        "22": {
+            "15": [
+                4,
+                2,
+                1
+            ],
+            "12": [
+                4,
                 2,
                 1
             ]
@@ -148,219 +485,169 @@
     },
     "subject_map": {
         "0": {
-            "8": [
+            "2": [
                 {
-                    "name": "General English",
-                    "hours": 3,
-                    "type": "theory"
-                }
-            ],
-            "9": [
-                {
-                    "name": "II Language",
-                    "hours": 3,
-                    "type": "theory"
-                }
-            ],
-            "4": [
-                {
-                    "name": "Problem Solving with Computers",
-                    "hours": 4,
-                    "type": "theory"
-                },
-                {
-                    "name": "Software Lab in C \u2013 Part I",
-                    "hours": 6,
-                    "type": "lab"
-                }
-            ],
-            "7": [
-                {
-                    "name": "Calculus",
-                    "hours": 4,
-                    "type": "theory"
-                }
-            ],
-            "10": [
-                {
-                    "name": "Awareness",
-                    "hours": 2,
-                    "type": "theory"
-                }
-            ],
-            "11": [
-                {
-                    "name": "Multidisciplinary Course",
-                    "hours": 3,
-                    "type": "theory"
-                }
-            ],
-            "5": [
-                {
-                    "name": "Software Lab in Python \u2013 I",
-                    "hours": 2,
-                    "type": "lab"
-                }
-            ],
-            "1000": [
-                {
-                    "name": "Free",
-                    "hours": 9,
-                    "type": "theory"
-                }
-            ]
-        },
-        "1": {
-            "8": [
-                {
-                    "name": "General English",
-                    "hours": 3,
-                    "type": "theory"
-                }
-            ],
-            "11": [
-                {
-                    "name": "Computer Organization and design",
-                    "hours": 4,
-                    "type": "theory"
-                },
-                {
-                    "name": "Multidisciplinary Course",
-                    "hours": 2,
-                    "type": "theory"
-                }
-            ],
-            "6": [
-                {
-                    "name": "Discrete Mathematics for Computer Science",
-                    "hours": 4,
-                    "type": "theory"
-                }
-            ],
-            "7": [
-                {
-                    "name": "Statistics for Data Science",
-                    "hours": 4,
-                    "type": "theory"
-                }
-            ],
-            "9": [
-                {
-                    "name": "Awareness",
-                    "hours": 2,
-                    "type": "theory"
-                }
-            ],
-            "1": [
-                {
-                    "name": "Software Lab in Data Visulaization",
-                    "hours": 4,
-                    "type": "lab"
-                }
-            ],
-            "1001": [
-                {
-                    "name": "Free",
-                    "hours": 13,
-                    "type": "theory"
-                }
-            ]
-        },
-        "2": {
-            "6": [
-                {
-                    "name": "Operating Systems",
-                    "hours": 4,
-                    "type": "theory"
-                }
-            ],
-            "1": [
-                {
-                    "name": "Computer Networks",
-                    "hours": 4,
-                    "type": "theory"
-                },
-                {
-                    "name": "Skill Enhancement Course",
-                    "hours": 3,
-                    "type": "theory"
-                }
-            ],
-            "7": [
-                {
-                    "name": "Optimization for Machine Learning",
+                    "name": "English",
                     "hours": 5,
                     "type": "theory"
                 }
             ],
-            "5": [
+            "15": [
                 {
-                    "name": "Datamining and Machine Learning",
+                    "name": "Maths",
                     "hours": 5,
                     "type": "theory"
                 }
             ],
-            "9": [
+            "12": [
                 {
-                    "name": "Awareness",
-                    "hours": 2,
-                    "type": "theory"
-                }
-            ],
-            "2": [
-                {
-                    "name": "Software Lab in Java",
-                    "hours": 6,
-                    "type": "lab"
-                }
-            ],
-            "1002": [
-                {
-                    "name": "Free",
-                    "hours": 7,
-                    "type": "theory"
-                }
-            ]
-        },
-        "3": {
-            "3": [
-                {
-                    "name": "Linux System Programming",
+                    "name": "Hindi",
                     "hours": 4,
                     "type": "theory"
                 }
             ],
-            "6": [
+            "18": [
                 {
-                    "name": "Elective \u2013 II",
+                    "name": "EVS",
                     "hours": 4,
-                    "type": "theory"
-                }
-            ],
-            "2": [
-                {
-                    "name": "Elective \u2013 III",
-                    "hours": 4,
-                    "type": "theory"
-                }
-            ],
-            "1": [
-                {
-                    "name": "Research Methodology",
-                    "hours": 2,
                     "type": "theory"
                 }
             ],
             "0": [
                 {
-                    "name": "Cloud Computing",
+                    "name": "Art & PE",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1000": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "1": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
                     "hours": 4,
                     "type": "theory"
                 }
             ],
-            "10": [
+            "18": [
                 {
-                    "name": "Awareness",
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Art & PE",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1001": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "2": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Art & PE",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1002": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "3": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Art & PE",
                     "hours": 2,
                     "type": "theory"
                 }
@@ -374,31 +661,38 @@
             ]
         },
         "4": {
-            "7": [
+            "2": [
                 {
-                    "name": "Stochastic Processes",
+                    "name": "English",
                     "hours": 5,
                     "type": "theory"
                 }
             ],
-            "5": [
+            "15": [
                 {
-                    "name": "Deep Learning",
+                    "name": "Maths",
                     "hours": 5,
                     "type": "theory"
                 }
             ],
-            "4": [
+            "12": [
                 {
-                    "name": "Natural Language Processing",
-                    "hours": 5,
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
                     "type": "theory"
                 }
             ],
             "0": [
                 {
-                    "name": "Cloud Computing",
-                    "hours": 5,
+                    "name": "GK & Values",
+                    "hours": 2,
                     "type": "theory"
                 }
             ],
@@ -409,7 +703,970 @@
                     "type": "theory"
                 }
             ]
+        },
+        "5": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "GK & Values",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1005": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "6": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "GK & Values",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1006": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "7": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "GK & Values",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1007": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "8": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "GK & Values",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1008": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "9": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "EVS",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "GK & Values",
+                    "hours": 2,
+                    "type": "theory"
+                }
+            ],
+            "1009": [
+                {
+                    "name": "Free",
+                    "hours": 16,
+                    "type": "theory"
+                }
+            ]
+        },
+        "10": {
+            "7": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "14": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Social Studies",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Sanskrit",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "1010": [
+                {
+                    "name": "Free",
+                    "hours": 6,
+                    "type": "theory"
+                }
+            ]
+        },
+        "11": {
+            "7": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "14": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Social Studies",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Sanskrit",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "1011": [
+                {
+                    "name": "Free",
+                    "hours": 6,
+                    "type": "theory"
+                }
+            ]
+        },
+        "12": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Social Studies",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Sanskrit",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1012": [
+                {
+                    "name": "Free",
+                    "hours": 6,
+                    "type": "theory"
+                }
+            ]
+        },
+        "13": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Social Studies",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Sanskrit",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1013": [
+                {
+                    "name": "Free",
+                    "hours": 6,
+                    "type": "theory"
+                }
+            ]
+        },
+        "14": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Social Studies",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Sanskrit",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1014": [
+                {
+                    "name": "Free",
+                    "hours": 6,
+                    "type": "theory"
+                }
+            ]
+        },
+        "15": {
+            "16": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "13": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "19": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "6": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "3": [
+                {
+                    "name": "Social Studies",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "17": [
+                {
+                    "name": "Sanskrit",
+                    "hours": 3,
+                    "type": "theory"
+                }
+            ],
+            "4": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1015": [
+                {
+                    "name": "Free",
+                    "hours": 6,
+                    "type": "theory"
+                }
+            ]
+        },
+        "16": {
+            "5": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "1": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "9": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "11": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "8": [
+                {
+                    "name": "Social Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "4": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1016": [
+                {
+                    "name": "Free",
+                    "hours": 8,
+                    "type": "theory"
+                }
+            ]
+        },
+        "17": {
+            "5": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "1": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "9": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "11": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "8": [
+                {
+                    "name": "Social Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "4": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1017": [
+                {
+                    "name": "Free",
+                    "hours": 8,
+                    "type": "theory"
+                }
+            ]
+        },
+        "18": {
+            "5": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "1": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "9": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "11": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "8": [
+                {
+                    "name": "Social Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "4": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1018": [
+                {
+                    "name": "Free",
+                    "hours": 8,
+                    "type": "theory"
+                }
+            ]
+        },
+        "19": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Maths",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Hindi",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "Social Science",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Computer Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "1019": [
+                {
+                    "name": "Free",
+                    "hours": 8,
+                    "type": "theory"
+                }
+            ]
+        },
+        "20": {
+            "10": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "14": [
+                {
+                    "name": "Physics",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Physics Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Chemistry",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Chemistry Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Mathematics",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "CS / IP",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "1020": [
+                {
+                    "name": "Free",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ]
+        },
+        "21": {
+            "10": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Business Studies",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Accountancy",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "14": [
+                {
+                    "name": "Economics",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Mathematics",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "1021": [
+                {
+                    "name": "Free",
+                    "hours": 12,
+                    "type": "theory"
+                }
+            ]
+        },
+        "22": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "15": [
+                {
+                    "name": "Physics",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Physics Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "12": [
+                {
+                    "name": "Chemistry",
+                    "hours": 5,
+                    "type": "theory"
+                },
+                {
+                    "name": "Chemistry Lab",
+                    "hours": 4,
+                    "type": "lab"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Mathematics",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "0": [
+                {
+                    "name": "CS / IP",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "1022": [
+                {
+                    "name": "Free",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ]
+        },
+        "23": {
+            "2": [
+                {
+                    "name": "English",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "7": [
+                {
+                    "name": "Accountancy",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "10": [
+                {
+                    "name": "Business Studies",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "14": [
+                {
+                    "name": "Economics",
+                    "hours": 5,
+                    "type": "theory"
+                }
+            ],
+            "18": [
+                {
+                    "name": "Mathematics",
+                    "hours": 4,
+                    "type": "theory"
+                }
+            ],
+            "1023": [
+                {
+                    "name": "Free",
+                    "hours": 12,
+                    "type": "theory"
+                }
+            ]
         }
     },
-    "fixed_periods": {}
+    "fixed_periods": {},
+    "elective_bundles": []
 }

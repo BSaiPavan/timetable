@@ -1,4 +1,5 @@
 import os
+import logging
 import json
 import csv
 from flask import Flask, render_template, request, redirect, url_for, jsonify
@@ -13,6 +14,15 @@ from extractor import get_solver_data_from_pdf
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# ── Check for OR-Tools on startup ────────────────────────────────────────────
+try:
+    from ortools.sat.python import cp_model as _cp_test
+    print("✅ OR-Tools available — using CP-SAT solver (fast)")
+except ImportError:
+    print("⚠️  OR-Tools NOT installed. Falling back to slow backtracking solver.")
+    print("   To fix: run  pip install ortools  and restart the app.")
+    print("   Without OR-Tools, solving may take 3-5 minutes or fail on large inputs.")
 
 # ── Clear stale session files on every app startup ───────────────────────────
 for _f in ["generated_timetable.json", "generated_metadata.json",
@@ -98,7 +108,13 @@ def generate():
                     "periods": p_count
                 })
 
-        return render_template("view_simple.html", rows=display_data)
+        # Extract days/periods from the PDF data if the extractor provided them
+        extracted_days    = int(data.get('days', 6))
+        extracted_periods = int(data.get('periods', 6))
+
+        return render_template("view_simple.html", rows=display_data,
+                               extracted_days=extracted_days,
+                               extracted_periods=extracted_periods)
 
     except Exception as e:
         import traceback
@@ -145,7 +161,7 @@ def _cell_text(timetable, class_idx, day, period, periods_per_day):
     text = str(raw).strip()
     lower = text.lower()
 
-    if lower in ("free", "f") or (lower.startswith("f") and len(text) < 4):
+    if lower == "free" or lower == "0" or text == "0":
         return "Free", "free"
     if "lab" in lower:
         return text, "lab"
@@ -483,28 +499,76 @@ def success_summary():
                             break
                 if tname:
                     teacher_names_set.add(tname)
-                    if tname not in teacher_slot_map:
-                        teacher_slot_map[tname] = []
-                    teacher_slot_map[tname].append(f"{cidx}-{si}")
+                    teacher_slot_map.setdefault(tname, []).append(f"{cidx}-{si}")
+
+                # Also register sub-teachers for split blocks (e.g. "II Language" → aa, bb)
+                # so they appear in the By Teacher view and are marked busy at these slots
+                for bundle in (stored.get('auto_bundles', []) + stored.get('sync_groups', [])):
+                    bname_lower = bundle.get('name', '').lower().strip()
+                    if bname_lower in (cell_norm, cell_str.lower().strip()):
+                        for m in bundle.get('members', []):
+                            if int(m.get('classIdx', -1)) == cidx:
+                                sub_t = m.get('teacherName', '')
+                                if sub_t and sub_t != tname:
+                                    teacher_names_set.add(sub_t)
+                                    teacher_slot_map.setdefault(sub_t, []).append(f"{cidx}-{si}")
 
     teacher_names = sorted(teacher_names_set)
 
-    # ── Conflict checker: same teacher in 2 classes at same slot ─────────────
+    # ── Build sync-group exempt set ───────────────────────────────────────────
+    # Sync groups intentionally place the same teacher in multiple classes at
+    # the same slot. Build (tname, slot_idx) pairs to skip in conflict detection.
+    sync_exempt = set()   # {(teacher_name, slot_idx), ...}
+    # Include both UI-created sync_groups and auto-built bundles from Split rows
+    sync_groups_stored = stored.get('sync_groups', []) + stored.get('auto_bundles', [])
+    for sg in sync_groups_stored:
+        members = sg.get('members', [])
+        if not members:
+            continue
+        # Exempt ALL member teachers from conflict detection — whether they're
+        # shared across classes (multi-class sync) or are sub-teachers within
+        # one class (intra-class split like II Language with eng/sans).
+        # Without this, intra-class sub-teachers get double-counted as conflicts.
+        all_member_teachers = {m.get('teacherName', '') for m in members if m.get('teacherName')}
+        for tname_sg in all_member_teachers:
+            if tname_sg in teacher_slot_map:
+                for slot_str in teacher_slot_map[tname_sg]:
+                    _, si_str = slot_str.split('-')
+                    sync_exempt.add((tname_sg, int(si_str)))
+
+    # ── Conflict checker: same teacher in 2 DIFFERENT classes at same slot ────
+    # Use a SET of class indices so duplicate entries for the same class
+    # (e.g. primary teacher + sub-teacher both added for class 0) don't falsely trigger.
     conflicts = []
-    slot_teacher_classes = {}  # (tname, si) -> [class_idxs]
+    slot_teacher_classes = {}  # (tname, si) -> set of DISTINCT class_idxs
     for tname, slots in teacher_slot_map.items():
         for s in slots:
             cidx_str, si_str = s.split('-')
             key = (tname, int(si_str))
-            slot_teacher_classes.setdefault(key, []).append(int(cidx_str))
+            slot_teacher_classes.setdefault(key, set()).add(int(cidx_str))
     for (tname, si), cidxs in slot_teacher_classes.items():
-        if len(cidxs) > 1:
+        if len(cidxs) > 1:  # only a real conflict if teacher in 2+ DIFFERENT classes
+            # Skip if this (teacher, slot) is an intentional sync group assignment
+            if (tname, si) in sync_exempt:
+                continue
             for cidx in cidxs:
                 conflicts.append([cidx, si])
 
     # teacher_map: {teacher_name: teacher_id} for JS
     teacher_map_js = {t['teacher']: t['teacher_id']
                       for cname in organized for t in organized[cname]}
+
+    # ── Build sync_group_label_map for the template ─────────────────────────
+    # Maps (cidx, subject_lower) -> bundle_name so the timetable can display
+    # e.g. "2nd Language" instead of just "eng2" or "sans"
+    sync_group_label_map = {}  # (cidx, subj_lower) -> bundle_display_name
+    for sg in sync_groups_stored:  # already includes auto_bundles from above
+        bname = sg.get('name', '')
+        for m in sg.get('members', []):
+            cidx_m = int(m.get('classIdx', -1))
+            subj_m = (m.get('subject') or '').lower().strip()
+            if cidx_m >= 0 and subj_m:
+                sync_group_label_map[(cidx_m, subj_m)] = bname
 
     return render_template("success.html",
                            timetable=timetable,
@@ -515,7 +579,8 @@ def success_summary():
                            teacher_names=teacher_names,
                            teacher_slot_map=teacher_slot_map,
                            teacher_map=teacher_map_js,
-                           conflicts=conflicts)
+                           conflicts=conflicts,
+                           sync_group_label_map={str(k): v for k, v in sync_group_label_map.items()})
 
 
 
@@ -526,36 +591,128 @@ def success_summary():
 def update_data():
     try:
         incoming_payload = request.get_json()
-        web_data = incoming_payload.get('table_data', [])
-        config = incoming_payload.get('config', {})
-        
+        web_data     = incoming_payload.get('table_data', [])
+        config       = incoming_payload.get('config', {})
+        split_groups = incoming_payload.get('split_groups', [])  # NEW: from Split rows
+
         # Create a mapping of teacher names to unique IDs
         all_teachers = sorted(list(set(row['teacher'] for row in web_data)))
         t_name_to_id = {name: i for i, name in enumerate(all_teachers)}
 
+        # Build set of all (className, blockName) pairs that are split groups
+        # so we can collapse sub-options into one block row per class
+        split_block_seen = set()  # (className, blockName) already added as block row
+
         organized_classes = {}
-        # Inside @app.route("/update-data", methods=["POST"])
         for row in web_data:
             c_name = row['class'].replace("Class ", "").strip()
-            if c_name not in organized_classes: 
+            if c_name not in organized_classes:
                 organized_classes[c_name] = []
-            
-            # ENSURE THESE TYPES ARE EXPLICIT
+
+            split_block = row.get('split_block', '').strip()
+
+            if split_block:
+                # This row is a sub-option of a split block.
+                # For single-class splits: only add the BLOCK ITSELF once
+                # (as a placeholder with the block name and correct hours).
+                # Multiple sub-options in the same class all share those hours,
+                # so we must not add them as separate subjects (would double/triple hours).
+                # The sub-teacher info is carried in the auto_bundle for busy-marking.
+                key = (c_name, split_block)
+                if key not in split_block_seen:
+                    split_block_seen.add(key)
+                    # Use the first sub-option's teacher as the "primary" teacher
+                    # for the block row — the bundle will mark all sub-teachers busy.
+                    organized_classes[c_name].append({
+                        "teacher":     row.get('teacher', 'Unknown'),
+                        "teacher_id":  t_name_to_id.get(row.get('teacher'), 99),
+                        "subject":     split_block,   # block name IS the subject in timetable
+                        "hours":       int(row.get('periods', 0)),
+                        "type":        "theory",
+                        "continuous":  1,
+                        "lab_no":      0,
+                        "split_block": split_block,
+                        "is_split_block": True,
+                    })
+                # Always skip adding the individual sub-option as its own subject row
+                # — it would add extra hours to the class workload
+                continue
+
             organized_classes[c_name].append({
-                "teacher": row.get('teacher', 'Unknown'),
-                "teacher_id": t_name_to_id.get(row.get('teacher'), 99), 
-                "subject": row.get('subject', 'General'),
-                "hours": int(row.get('periods', 0)),
-                "type": str(row.get('type', 'theory')).lower().strip(), # Clean string
+                "teacher":    row.get('teacher', 'Unknown'),
+                "teacher_id": t_name_to_id.get(row.get('teacher'), 99),
+                "subject":    row.get('subject', 'General'),
+                "hours":      int(row.get('periods', 0)),
+                "type":       str(row.get('type', 'theory')).lower().strip(),
                 "continuous": int(row.get('continuous', 1)),
-                "lab_no": int(row.get('lab_no', 0))
+                "lab_no":     int(row.get('lab_no', 0)),
+                "split_block": '',
             })
 
+        # ── Auto-build elective_bundles from split_groups ─────────────────────
+        # split_groups format: [{blockName, className, hours, children:[{name,teacher}]}]
+        # Group by blockName: same blockName across different classes → one bundle
+        from collections import defaultdict
+        block_classes = defaultdict(list)  # blockName -> [{ className, hours, children }]
+        for sg in split_groups:
+            block_classes[sg['blockName']].append(sg)
+
+        auto_bundles = []
+        for block_name, class_entries in block_classes.items():
+            if len(class_entries) < 1:
+                continue
+            hours = class_entries[0]['hours']
+            members = []
+            # Get class index for each className
+            class_keys = list(organized_classes.keys())
+            for ce in class_entries:
+                cname = ce['className'].replace('Class ', '').strip()
+                try:
+                    cidx = class_keys.index(cname)
+                except ValueError:
+                    continue
+                for child in ce.get('children', []):
+                    if not child.get('name') or not child.get('teacher'):
+                        continue
+                    members.append({
+                        'classIdx':    cidx,
+                        'className':   cname,
+                        'subject':     child['name'],
+                        'teacherName': child['teacher'],
+                        'teacherId':   str(t_name_to_id.get(child['teacher'], 99)),
+                        'hours':       hours
+                    })
+            # Create a bundle for ANY split group with 2+ sub-options,
+            # even within a single class. The bundle forces all sub-subjects
+            # (e.g. 'a' and 'b') to occupy the SAME slots, so the timetable
+            # shows the block name ('II Language') not individual sub-subject names.
+            # Multi-class bundles additionally sync across classes.
+            if len(members) >= 2:
+                unique_cidxs = {m['classIdx'] for m in members}
+                # Rewrite each member's subject to the BLOCK NAME (e.g. 'II Language').
+                # The subject_map only has the block name — sub-option names (eng/sans)
+                # were collapsed into a single row and don't exist in subject_map.
+                # Keep sub_subject for reference/display only.
+                members_for_bundle = [
+                    {**m, 'subject': block_name, 'sub_subject': m.get('subject', '')}
+                    for m in members
+                ]
+                auto_bundles.append({
+                    'name':          block_name,
+                    'type':          'split',
+                    'periodsPerWeek': hours,
+                    'members':       members_for_bundle,
+                })
+                logging.info(f"Auto-bundle '{block_name}': {len(members_for_bundle)} members across {len(unique_cidxs)} class(es)")
+            else:
+                logging.info(f"Auto-bundle '{block_name}': fewer than 2 sub-options — skipping.")
+
         session_data = {
-            "organized": organized_classes,
-            "days": int(config.get('days', 6)),
-            "periods": int(config.get('periods', 6)),
-            "session_token": str(__import__('uuid').uuid4())  # fresh token every upload
+            "organized":      organized_classes,
+            "days":           int(config.get('days', 6)),
+            "periods":        int(config.get('periods', 6)),
+            "session_token":  str(__import__('uuid').uuid4()),
+            "auto_bundles":   auto_bundles,   # persisted so fixed_setup can show them
         }
         with open("temp_web_data.json", "w") as f:
             json.dump(session_data, f)
@@ -584,7 +741,8 @@ def setup_fixed():
         days=stored.get('days', 6),
         periods=periods_value,
         class_data=stored.get('organized', {}),
-        session_token=stored.get('session_token', 'default')
+        session_token=stored.get('session_token', 'default'),
+        auto_bundles=stored.get('auto_bundles', [])
     )
 @app.route("/run-final-solver", methods=["POST"])
 def run_final_solver():
@@ -593,12 +751,22 @@ def run_final_solver():
         fixed_data     = payload.get('fixed_slots', {})
         unavail_data   = payload.get('teacher_unavailability', {})
         elective_bundles = payload.get('elective_bundles', [])
-        
+
         if not os.path.exists("temp_web_data.json"):
             return jsonify({"status": "error", "message": "Session expired. Please restart."}), 400
 
         with open("temp_web_data.json", "r") as f:
             stored = json.load(f)
+
+        # Merge auto_bundles from split rows (persisted in session) with any
+        # user-provided bundles from the sync group UI. User bundles take priority
+        # (they override by name if the same blockName was also auto-built).
+        auto_bundles = stored.get('auto_bundles', [])
+        if auto_bundles:
+            existing_names = {b.get('name') for b in elective_bundles}
+            for ab in auto_bundles:
+                if ab.get('name') not in existing_names:
+                    elective_bundles.append(ab)
 
         from adapter import build_final_inputs 
         
@@ -663,35 +831,194 @@ def run_final_solver():
             for c_name, teachers in stored['organized'].items():
                 for t in teachers:
                     flat_rows.append({"class": f"Class {c_name}", "teacher": t['teacher']})
-            
             with open("final_schedule.json", "w") as f:
                 json.dump(flat_rows, f)
 
+            # 4. Persist sync groups into temp_web_data so success_summary can
+            #    exempt intentional shared-teacher slots from conflict detection
+            stored['sync_groups'] = solver_bundles
+            with open("temp_web_data.json", "w") as f:
+                json.dump(stored, f)
+
             return jsonify({"status": "success", "redirect": url_for('success_summary')})
         
-        # Build a conflict report by checking teacher workload vs available slots
+        # ── Smart solver failure diagnostics ──────────────────────────────────
         report_lines = []
-        for cidx, cname in enumerate(stored['organized'].keys()):
-            total_slots = stored['days'] * stored['periods']
-            teachers = stored['organized'][cname]
-            total_hours = sum(int(t.get('hours', 0)) for t in teachers)
-            if total_hours > total_slots:
-                report_lines.append(f"Class {cname}: {total_hours} hours assigned but only {total_slots} slots available.")
-        # Check teacher double-booking across classes
-        teacher_class_hours = {}
-        for cname, teachers in stored['organized'].items():
+        days        = stored['days']
+        periods_day = stored['periods']
+        total_slots = days * periods_day
+        organized   = stored['organized']
+
+        # 1. Per-class overload
+        for cname, teachers in organized.items():
+            theory_hrs = sum(int(t.get('hours', 0)) for t in teachers if t.get('type','theory').lower() != 'lab')
+            lab_hrs    = sum(int(t.get('hours', 0)) for t in teachers if t.get('type','').lower() == 'lab')
+            total_hrs  = theory_hrs + lab_hrs
+            if total_hrs > total_slots:
+                over = total_hrs - total_slots
+                report_lines.append(
+                    f"📚 <b>Class {cname}</b> has <b>{total_hrs} hours</b> but only "
+                    f"<b>{total_slots} slots</b> available ({over} hour(s) too many). "
+                    f"Remove or reduce a subject."
+                )
+
+        # 2. Teacher overload — total hours across all classes vs available slots
+        teacher_hours = {}
+        for cname, teachers in organized.items():
             for t in teachers:
-                tid = t.get('teacher_id')
-                tname = t.get('teacher', f'T{tid}')
+                tname = t.get('teacher', '')
                 hours = int(t.get('hours', 0))
-                teacher_class_hours.setdefault(tname, 0)
-                teacher_class_hours[tname] += hours
-        max_slots = stored['days'] * stored['periods']
-        for tname, total in teacher_class_hours.items():
-            if total > max_slots:
-                report_lines.append(f"Teacher <b>{tname}</b> has {total} total hours across all classes but only {max_slots} slots/week.")
-        conflict_report = "<br>".join(report_lines) if report_lines else "No specific conflict identified. Try removing some fixed slots or unavailability constraints."
-        return jsonify({"status": "error", "message": "Solver failed.", "conflict_report": conflict_report})
+                teacher_hours.setdefault(tname, 0)
+                teacher_hours[tname] += hours
+        for tname, total in teacher_hours.items():
+            if total > total_slots:
+                over = total - total_slots
+                report_lines.append(
+                    f"👤 <b>{tname}</b> is assigned <b>{total} hours total</b> across all classes "
+                    f"but only {total_slots} slots exist per week ({over} too many). "
+                    f"Reduce this teacher's hours or split across different teachers."
+                )
+
+        # 3. Fixed slot overcommitment — count fixed slots per class
+        fixed_counts = {}
+        for cls_str, slots in fixed_data.items():
+            count = sum(1 for s in slots.values()
+                        if s.get('teacher_id', '__none__') != '__none__' and s.get('label'))
+            if count:
+                fixed_counts[cls_str] = count
+        for cls_str, count in fixed_counts.items():
+            cidx = int(cls_str)
+            cname = list(organized.keys())[cidx] if cidx < len(organized) else cls_str
+            avail = total_slots - count
+            theory_needed = sum(int(t.get('hours',0)) for t in organized.get(cname,[])
+                                if t.get('type','theory').lower() != 'lab')
+            if theory_needed > avail:
+                report_lines.append(
+                    f"📌 <b>Class {cname}</b>: {count} fixed slots leave only {avail} free slots "
+                    f"but theory subjects need {theory_needed}. Remove some fixed slots."
+                )
+
+        # 4. Sync group problems
+        for b in solver_bundles:
+            bname   = b.get('name', 'unnamed')
+            k       = int(b.get('periodsPerWeek', 1))
+            members = b.get('members', [])
+            if len(members) < 2:
+                report_lines.append(
+                    f"🔗 Sync group <b>\"{bname}\"</b> has fewer than 2 members — skipped by solver."
+                )
+            # Check every member: does classIdx actually contain that subject?
+            class_keys = list(organized.keys())
+            for m in members:
+                cidx      = int(m.get('classIdx', -1))
+                subj_name = (m.get('subject') or '').strip()
+                tname_m   = m.get('teacherName', '')
+                if cidx < 0 or cidx >= len(class_keys):
+                    report_lines.append(
+                        f"🔗 Sync group <b>\"{bname}\"</b>: classIdx <b>{cidx}</b> is out of range "                        f"(only {len(class_keys)} classes exist: indices 0–{len(class_keys)-1}). "                        f"Re-create the sync group — pick subjects from the correct class rows in the dropdown."
+                    )
+                    continue
+                cname_m   = class_keys[cidx]
+                stored_cname = (m.get('className') or '').strip()
+                class_subjs = [t.get('subject','') for t in organized.get(cname_m, [])]
+                # Also include split-block sub-subjects in the valid subject list
+                class_subjs_all = class_subjs  # same list, split_block subjects are in organized too
+                if subj_name not in class_subjs:
+                    # Detect stale classIdx: the name stored in the member doesn't match
+                    # what's at that index now — this is a stale-localStorage problem.
+                    if stored_cname and stored_cname != cname_m:
+                        # Try to find the right index for the stored class name
+                        correct_idx = class_keys.index(stored_cname) if stored_cname in class_keys else -1
+                        correct_subjs = [t.get('subject','') for t in organized.get(stored_cname, [])]
+                        if correct_idx >= 0 and subj_name in correct_subjs:
+                            report_lines.append(
+                                f"🔗 Sync group <b>\"{bname}\"</b>: member says class <b>\"{stored_cname}\"</b> "
+                                f"but classIdx <b>{cidx}</b> points to <b>\"{cname_m}\"</b> instead. "
+                                f"This is stale data from a previous session. "
+                                f"<b>Fix:</b> On the Class-Specific Setup page, open the Sync Groups panel, "
+                                f"delete group <b>\"{bname}\"</b>, then re-create it — it should be "
+                                f"auto-populated from your Split rows. Or click the page back and forward to reload."
+                            )
+                        else:
+                            report_lines.append(
+                                f"🔗 Sync group <b>\"{bname}\"</b>: subject <b>\"{subj_name}\"</b> "
+                                f"does not exist in <b>Class {cname_m}</b> (index {cidx}). "
+                                f"That class has: {', '.join(class_subjs[:6])}. "
+                                f"Delete this sync group and re-add it from the correct class rows."
+                            )
+                    else:
+                        report_lines.append(
+                            f"🔗 Sync group <b>\"{bname}\"</b>: subject <b>\"{subj_name}\"</b> "
+                            f"does not exist in <b>Class {cname_m}</b> (index {cidx}). "
+                            f"That class has: {', '.join(class_subjs[:6])}. "
+                            f"Delete this sync group and re-add using the correct class rows in the dropdown."
+                        )
+            # Check if any member's teacher is overloaded with sync slots
+            teacher_sync_load = {}
+            for m in members:
+                tid = str(m.get('teacherId',''))
+                tname = m.get('teacherName','?')
+                teacher_sync_load.setdefault(tname, 0)
+                teacher_sync_load[tname] += k
+            for tname, sync_hrs in teacher_sync_load.items():
+                total_for_teacher = teacher_hours.get(tname, 0)
+                if sync_hrs > total_slots:
+                    report_lines.append(
+                        f"🔗 Sync group <b>\"{bname}\"</b>: teacher <b>{tname}</b> would need "
+                        f"{sync_hrs} slots just for sync assignments but only {total_slots} slots exist."
+                    )
+
+        # 5. Teacher unavailability too restrictive
+        if unavail_data:
+            for tid_str, blocked_slots in unavail_data.items():
+                # Find teacher name
+                tname = tid_str
+                for cname, teachers in organized.items():
+                    for t in teachers:
+                        if str(t.get('teacher_id','')) == tid_str:
+                            tname = t.get('teacher', tid_str)
+                            break
+                total_blocked = len(blocked_slots)
+                avail_slots   = total_slots - total_blocked
+                needed = teacher_hours.get(tname, 0)
+                if needed > avail_slots:
+                    report_lines.append(
+                        f"🚫 <b>{tname}</b> has {total_blocked} unavailable slots, leaving "
+                        f"{avail_slots} free — but needs {needed} teaching slots. "
+                        f"Reduce unavailability or reduce their hours."
+                    )
+
+        # Phantom class detection: class with >80% free slots is likely a parsing artifact
+        total_s = days * periods_day
+        for cname, teachers in organized.items():
+            total_hours = sum(int(t.get('hours', 0)) for t in teachers if t.get('type','theory').lower() != 'lab')
+            lab_hours = sum(int(t.get('hours', 0)) for t in teachers if t.get('type','').lower() == 'lab')
+            real_hours = total_hours + lab_hours
+            if real_hours < total_s * 0.2:  # Less than 20% real subjects
+                free_hrs = total_s - real_hours
+                report_lines.append(
+                    f"🔍 <b>Class {cname}</b> has only <b>{real_hours} real subject hours</b> "                    f"({free_hrs} free slots out of {total_s}). "                    f"This is likely a <b>PDF extraction artifact</b> — check if this is a real class "                    f"or leftover data from the last page of the PDF. "                    f"If it's not a real class, delete all its rows in Data Verification."
+                )
+
+        # OR-Tools missing warning
+        try:
+            from ortools.sat.python import cp_model as _cp
+        except ImportError:
+            report_lines.append(
+                f"⚡ <b>OR-Tools is not installed.</b> The backtracking solver is much slower "                f"and may fail on inputs this size. "                f"Run <code>pip install ortools</code> and restart the app to use the fast CP-SAT solver."
+            )
+
+        if not report_lines:
+            report_lines.append(
+                "🤔 No obvious overload found. Possible causes:<br>"
+                "• Fixed slots are blocking too many combinations for the solver to fit everything.<br>"
+                "• Sync group constraints conflict with teacher availability.<br>"
+                "• A teacher teaches many classes and their slots are tightly constrained.<br>"
+                "<b>Try:</b> removing some fixed slots, relaxing unavailability, or reducing sync group size."
+            )
+
+        conflict_report = "<br><br>".join(report_lines)
+        return jsonify({"status": "error", "message": "Solver could not find a valid timetable.", "conflict_report": conflict_report})
     except Exception as e:
         import traceback
         print(traceback.format_exc()) 

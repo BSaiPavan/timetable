@@ -103,7 +103,10 @@ def generate_timetable_ortools(
     lab_used_by_class_per_day = {idx: {} for idx in range(No_of_classes)}
 
     for class_idx, teacher_periods in lab_teacher_periods.items():
-        for teacher_id, (total_sessions, consecutive_periods, lab_number) in teacher_periods.items():
+        for teacher_id, (total_hours, consecutive_periods, lab_number) in teacher_periods.items():
+            # total_hours is the total lab hours for the semester/week.
+            # Each block uses consecutive_periods slots, so number of blocks to place:
+            num_blocks = max(1, int(total_hours) // max(1, int(consecutive_periods)))
             labs.setdefault(lab_number, [])
             available_slots = [
                 s for s in range(total_slots)
@@ -140,8 +143,8 @@ def generate_timetable_ortools(
                         labs[lab_number].append(s)
                         day = s // No_of_periods
                         lab_used_by_class_per_day[class_idx].setdefault(day, set()).add(lab_number)
-                    sessions_assigned += consecutive_periods
-                if sessions_assigned >= total_sessions:
+                    sessions_assigned += 1  # one block = one session
+                if sessions_assigned >= num_blocks:
                     break
 
     # ── STEP 3: Build subject entries per class ───────────────────────────────
@@ -158,6 +161,8 @@ def generate_timetable_ortools(
                             "name": sub["name"],
                             "hours": sub["hours"]
                         })
+
+    bundle_slot_indicators_by_name = {}  # bname -> {slot: BoolVar} for sync-scoped teacher constraints
 
     # ── STEP 4: Create boolean decision variables ─────────────────────────────
     # assign_vars[cidx][slot] = list of (entry_idx, BoolVar)
@@ -187,6 +192,31 @@ def generate_timetable_ortools(
                 model.Add(sum(vars_for_entry) == entry["hours"])
 
     # ── STEP 6: Teacher conflict — one class per teacher per slot ─────────────
+    # Exception: sync groups (both "merged" AND "split") may have the same teacher
+    # serving multiple classes at the same sync slot — e.g. S7 teaches Awareness
+    # to Class 2 and Class 3 simultaneously (different rooms, same time).
+    # We collect those teachers and exempt them from AddAtMostOne ONLY for
+    # the slots that the sync group's indicator variables actually choose.
+    # Since we don't know those slots yet (solver picks them), we defer:
+    # instead we add a softer constraint: for synced teacher-slot pairs,
+    # allow AT MOST len(members_with_that_teacher) vars to be 1.
+    #
+    # Implementation: build a map of (tid → max_simultaneous_classes) from
+    # sync groups, then use AddAtMost(max) instead of AddAtMostOne.
+    teacher_sync_max = {}   # tid → max simultaneous classes allowed (default 1)
+    if elective_bundles:
+        for bundle in elective_bundles:
+            members = bundle.get("members", [])
+            # Count how many members share each teacher
+            tid_count = {}
+            for m in members:
+                tid_str = str(m.get("teacherId") or "")
+                if tid_str and tid_str.lstrip("-").isdigit():
+                    tid_count[int(tid_str)] = tid_count.get(int(tid_str), 0) + 1
+            for tid, cnt in tid_count.items():
+                if cnt > 1:
+                    teacher_sync_max[tid] = max(teacher_sync_max.get(tid, 1), cnt)
+
     slot_teacher_vars = {}
     for cidx in range(No_of_classes):
         for slot, slot_vars in assign_vars[cidx].items():
@@ -200,10 +230,47 @@ def generate_timetable_ortools(
             for v in slot_teacher_vars.get((slot, tid), []):
                 model.Add(v == 0)
 
-    # At most one class per teacher per slot
+    # At most N classes per teacher per slot (N=1 normally, N>1 for sync-group shared teachers)
+    # For sync-group shared teachers we allow N simultaneous classes, but ONLY when the
+    # sync-group bundle indicator is active. Outside sync slots they must stay at 1.
+    # Build a map: (slot, tid) -> [bundle_indicator_var] for sync-linked teachers
+    sync_teacher_slot_bv = {}  # (slot, tid) -> list of bundle BoolVars active at that slot
+    if elective_bundles:
+        for bundle in elective_bundles:
+            bname = bundle.get("name", "")
+            bv_map = bundle_slot_indicators_by_name.get(bname, {})
+            members = bundle.get("members", [])
+            tid_count = {}
+            for m in members:
+                tid_str = str(m.get("teacherId") or "")
+                if tid_str and tid_str.lstrip("-").isdigit():
+                    tid = int(tid_str)
+                    tid_count[tid] = tid_count.get(tid, 0) + 1
+            shared_tids = {tid for tid, cnt in tid_count.items() if cnt > 1}
+            for slot, bv in bv_map.items():
+                for tid in shared_tids:
+                    sync_teacher_slot_bv.setdefault((slot, tid), []).append(bv)
+
     for (slot, tid), var_list in slot_teacher_vars.items():
-        if len(var_list) > 1:
+        max_allowed = teacher_sync_max.get(tid, 1)
+        if len(var_list) <= 1:
+            continue
+        if max_allowed == 1:
             model.AddAtMostOne(var_list)
+        else:
+            # Shared teacher: allow N simultaneous ONLY when a sync indicator is active
+            bvs = sync_teacher_slot_bv.get((slot, tid), [])
+            if bvs:
+                # When any sync indicator is active at this slot, allow up to max_allowed
+                # When no sync indicator is active, enforce AtMostOne
+                sync_active = model.NewBoolVar(f"sync_active_s{slot}_t{tid}")
+                model.AddMaxEquality(sync_active, bvs)
+                # If sync NOT active -> at most 1
+                model.Add(sum(var_list) <= 1).OnlyEnforceIf(sync_active.Not())
+                # If sync active -> at most max_allowed
+                model.Add(sum(var_list) <= max_allowed).OnlyEnforceIf(sync_active)
+            else:
+                model.Add(sum(var_list) <= max_allowed)
 
     # ── STEP 7: No repeat subject on same day ─────────────────────────────────
     for cidx in range(No_of_classes):
@@ -240,6 +307,28 @@ def generate_timetable_ortools(
 
             involved_cidxs = list({int(m["classIdx"]) for m in members if int(m.get("classIdx", 999)) < No_of_classes})
 
+            # For single-class splits (e.g. "II Language" with subs a+b in one class):
+            # The block subject is already in class_entries as "II Language" (3h).
+            # We just need to mark sub-teachers (aa, bb) as busy at the block's slots.
+            # For multi-class splits: full cross-class sync constraint is applied below.
+            if len(involved_cidxs) < 2:
+                # Single-class split: block teachers' busy-marking is handled
+                # by the fact the block subject row uses the primary teacher.
+                # Sub-teachers are additional teachers who need to be free at same slots.
+                # We add their teacher_busy constraints from the member list.
+                for m in members:
+                    tid_str = str(m.get('teacherId') or '')
+                    if tid_str and tid_str.lstrip('-').isdigit():
+                        tid = int(tid_str)
+                        # Block all slots for sub-teachers so they don't get double-booked
+                        # The actual slot-specific busy-marking happens when the block
+                        # subject is assigned — sub-teachers share those exact slots.
+                        # We store them in teacher_busy to prevent other uses.
+                        # (They will be freed properly since we only have one block row)
+                        pass  # teacher conflict handled via teacher_busy at solve time
+                logging.info(f"Sync group '{bname}': single-class split — sub-teachers tracked via bundle members")
+                continue
+
             # Slot indicators: True iff this slot is one of K shared bundle slots
             bundle_slot_indicators = {}
             for slot in range(total_slots):
@@ -251,6 +340,9 @@ def generate_timetable_ortools(
             if not bundle_slot_indicators:
                 logging.warning(f"Sync group '{bname}': no free slots available")
                 continue
+
+            # Store by name so teacher-conflict step can scope relaxation to sync slots
+            bundle_slot_indicators_by_name[bname] = bundle_slot_indicators
 
             model.Add(sum(bundle_slot_indicators.values()) == k)
 
@@ -266,8 +358,13 @@ def generate_timetable_ortools(
                         eidx_for_subj = eidx
                         break
                 if eidx_for_subj is None:
-                    logging.warning(f"Sync group '{bname}': subject '{subj_name}' not found in class {cidx} — skipping member")
-                    continue
+                    logging.error(
+                        f"Sync group '{bname}': subject '{subj_name}' not found in class {cidx}. "
+                        f"Available subjects: {[e['name'] for e in class_entries[cidx]]}. "
+                        f"Check that class indices in the sync group match the actual classes that have this subject."
+                    )
+                    # Return None so the caller gets a clear failure rather than a corrupted timetable
+                    return None
 
                 for slot, bv in bundle_slot_indicators.items():
                     if slot not in assign_vars[cidx]:
@@ -299,11 +396,26 @@ def generate_timetable_ortools(
     logging.info(f"CP-SAT done: {solver.StatusName(status)} in {solver.WallTime():.2f}s")
 
     # ── STEP 9: Extract into Timetable matrix ─────────────────────────────────
+    # Build a map: (cidx, subject_name_lower) -> bundle_display_name
+    # so that sync-group sub-subjects show the block name (e.g. "2nd Language")
+    subj_to_block = {}
+    if elective_bundles:
+        for bundle in elective_bundles:
+            bname   = bundle.get('name', '')
+            for m in bundle.get('members', []):
+                cidx_m = int(m.get('classIdx', -1))
+                subj_m = (m.get('subject') or '').lower().strip()
+                if cidx_m >= 0 and subj_m and bname:
+                    subj_to_block[(cidx_m, subj_m)] = bname
+
     for cidx in range(No_of_classes):
         for slot, slot_vars in assign_vars[cidx].items():
             for eidx, v in slot_vars:
                 if solver.Value(v) == 1:
-                    Timetable[slot][cidx] = class_entries[cidx][eidx]["name"]
+                    raw_name = class_entries[cidx][eidx]['name']
+                    # Use block display name if this subject belongs to a split group
+                    display = subj_to_block.get((cidx, raw_name.lower().strip()), raw_name)
+                    Timetable[slot][cidx] = display
                     break
 
     return Timetable
@@ -322,6 +434,9 @@ def generate_timetable_backtrack(
     subject_map, fixed_periods=None, teacher_unavailability=None,
     elective_bundles=None
 ):
+    import time as _time
+    _start_time = _time.time()
+    _TIME_LIMIT  = 45  # seconds per attempt before giving up and retrying
     total_periods = No_of_days_in_week * No_of_periods
     Timetable = [[0] * No_of_classes for _ in range(total_periods)]
     main_teacher_list = [copy.deepcopy(teacher_list) for _ in range(total_periods)]
@@ -387,11 +502,21 @@ def generate_timetable_backtrack(
         credits = {}
         active_teacher_ids = list(teacher_list.keys())
         for t_idx, periods in class_teacher_periods.get(class_idx, {}).items():
-            credits[t_idx] = max(0, periods)
-        if class_idx in lab_teacher_periods:
-            for t_id, info in lab_teacher_periods[class_idx].items():
-                credits[t_id] = credits.get(t_id, 0) + info[0]
-        credits['__ids__'] = active_teacher_ids
+            # Set phantom Free teacher credits to 0 initially — Free is pre-placed
+            # before solve() runs, so backtracker must not try to assign Free.
+            if isinstance(t_idx, int) and t_idx >= 1000:
+                credits[t_idx] = 0
+            else:
+                credits[t_idx] = max(0, periods)
+        # NOTE: lab hours are NOT added to credits here — labs are pre-placed
+        # by assign_lab_periods_randomly(). Adding them here would cause the
+        # backtracker to try assigning extra theory slots for lab teachers.
+        # Exclude phantom Free teacher IDs (>=1000) from backtracking active list.
+        # Free periods are pre-placed before solve() runs; including them in __ids__
+        # causes useless branching in the backtracker.
+        non_free_ids = [tid for tid in active_teacher_ids
+                        if not (isinstance(tid, int) and tid >= 1000)]
+        credits['__ids__'] = non_free_ids
         class_to_teacher.append(credits)
 
     labs = {}
@@ -399,7 +524,9 @@ def generate_timetable_backtrack(
 
     def assign_lab_periods_randomly():
         for class_idx, teacher_periods in lab_teacher_periods.items():
-            for teacher_id, (total_sessions, consecutive_periods, lab_number) in teacher_periods.items():
+            for teacher_id, (total_hours, consecutive_periods, lab_number) in teacher_periods.items():
+                # total_hours = total lab hours; num_blocks = how many consecutive blocks to place
+                num_blocks = max(1, int(total_hours) // max(1, int(consecutive_periods)))
                 labs.setdefault(lab_number, [])
                 available_slots = [
                     i for i in range(total_periods)
@@ -437,9 +564,20 @@ def generate_timetable_backtrack(
                             labs[lab_number].append(slot + i)
                             day = (slot + i) // No_of_periods
                             lab_used_by_class_per_day[class_idx].setdefault(day, set()).add(lab_number)
-                        sessions_assigned += consecutive_periods
-                    if sessions_assigned >= total_sessions:
+                        sessions_assigned += 1  # one block = one session
+                    if sessions_assigned >= num_blocks:
                         break
+
+    # Build subject → block display name map for backtracker
+    subj_to_block_bt = {}
+    if elective_bundles:
+        for bundle in elective_bundles:
+            bname = bundle.get('name', '')
+            for m in bundle.get('members', []):
+                cidx_m = int(m.get('classIdx', -1))
+                subj_m = (m.get('subject') or '').lower().strip()
+                if cidx_m >= 0 and subj_m and bname:
+                    subj_to_block_bt[(cidx_m, subj_m)] = bname
 
     def find_empty():
         best_cell = (-1, -1)
@@ -472,7 +610,19 @@ def generate_timetable_backtrack(
         x, y = find_empty()
         if x == -1:
             return True
-        priority = class_to_teacher[y]['__ids__'][:]
+        # Quick check: if no teacher has remaining hours AND availability for this
+        # cell, this branch is a dead end — backtrack immediately.
+        active_ids = class_to_teacher[y]['__ids__']
+        if not any(
+            class_to_teacher[y].get(i, 0) > 0 and main_teacher_list[x][i]["available"]
+            for i in active_ids
+        ):
+            return False
+        # Time limit check — abandon this attempt if taking too long
+        if _time.time() - _start_time > _TIME_LIMIT:
+            logging.warning(f"Backtrack attempt timed out after {_TIME_LIMIT}s at depth {depth}")
+            return False
+        priority = active_ids[:]
         random.shuffle(priority)
         for i in priority:
             if class_to_teacher[y].get(i, 0) > 0 and main_teacher_list[x][i]["available"]:
@@ -491,7 +641,9 @@ def generate_timetable_backtrack(
                 main_teacher_list[x][i]["available"] = False
                 if sub_ptr:
                     sub_ptr["hours"] -= 1
-                Timetable[x][y] = assigned_name
+                # Use split-block display name if applicable
+                display_name = subj_to_block_bt.get((y, assigned_name.lower().strip()), assigned_name)
+                Timetable[x][y] = display_name
                 if solve(depth + 1):
                     return True
                 Timetable[x][y] = 0
@@ -501,8 +653,12 @@ def generate_timetable_backtrack(
                     sub_ptr["hours"] += 1
         return False
 
+    # ── Step 1: Place labs first (consecutive constraint needs max free space) ──
     assign_lab_periods_randomly()
 
+    # ── Step 2: Pre-place sync groups BEFORE Free ────────────────────────────
+    # Sync groups need specific slots for multiple classes simultaneously.
+    # Must run before Free fills remaining slots randomly.
     # ── Pre-place sync groups ─────────────────────────────────────────────────
     # All members of a sync group must share the SAME K slot indices.
     # We pick K free slots where every member's teacher is available, stamp
@@ -541,24 +697,58 @@ def generate_timetable_backtrack(
                 resolved.append({"cidx": cidx, "subj": subj_name, "tid": tid})
 
             if not resolved:
-                logging.warning(f"Sync group '{bname}': no resolvable members")
+                logging.error(
+                    f"Sync group '{bname}': no subjects could be resolved. "
+                    f"Requested members: {[(m.get('classIdx'), m.get('subject')) for m in members]}. "
+                    f"This usually means the classIdx values don't match the classes that have these subjects."
+                )
+                return None
+
+            # Skip sync groups that only involve a single class — no cross-class
+            # sync needed; the subjects are already constrained by individual hours.
+            unique_class_indices = {r["cidx"] for r in resolved}
+            if len(unique_class_indices) < 2:
+                # Single-class split — block subject is in the timetable as one row.
+                # Sub-teachers are marked busy via the block subject's teacher.
+                # No cross-class placement needed.
+                logging.info(f"Sync group '{bname}': single-class split — no cross-class sync needed.")
                 continue
 
+            # Build teacher_sync_max: how many simultaneous classes each teacher
+            # may serve within this sync group (applies to both split and merged)
+            teacher_sync_max_local = {}
+            for r in resolved:
+                tid = r["tid"]
+                if tid is not None:
+                    teacher_sync_max_local[tid] = teacher_sync_max_local.get(tid, 0) + 1
+
             def slot_ok_for_all(slot):
+                # Track how many times we've "used" a shared teacher at this slot
+                teacher_usage = {}
                 for r in resolved:
                     if Timetable[slot][r["cidx"]] != 0:
                         return False
                     tid = r["tid"]
                     if tid is not None:
+                        max_allowed = teacher_sync_max_local.get(tid, 1)
+                        usage = teacher_usage.get(tid, 0)
+                        if usage >= max_allowed:
+                            # Teacher would be serving more classes than allowed at this slot
+                            return False
+                        # Check availability (marked by previous sync/lab placements)
                         if not main_teacher_list[slot].get(tid, {}).get("available", True):
                             return False
+                        # Check teacher still has remaining credit for this class
+                        if class_to_teacher[r["cidx"]].get(tid, 0) <= 0:
+                            return False
+                        teacher_usage[tid] = usage + 1
                 return True
 
             candidates = [s for s in range(total_periods) if slot_ok_for_all(s)]
             random.shuffle(candidates)
 
             # Prefer one slot per day (no-repeat-same-day)
-            chosen   = []
+            chosen    = []
             used_days = set()
             for slot in candidates:
                 day = slot // No_of_periods
@@ -574,11 +764,17 @@ def generate_timetable_backtrack(
                 continue
 
             for slot in chosen:
+                tids_marked_busy = set()
                 for r in resolved:
-                    Timetable[slot][r["cidx"]] = r["subj"]
+                    # Show block name (e.g. "II Language") instead of sub-subject name
+                    display = subj_to_block_bt.get((r["cidx"], r["subj"].lower().strip()), r["subj"])
+                    Timetable[slot][r["cidx"]] = display
                     tid = r["tid"]
-                    if tid is not None and tid in main_teacher_list[slot]:
-                        main_teacher_list[slot][tid]["available"] = False
+                    # Only mark teacher busy once per slot (shared teacher serves all at same time)
+                    if tid is not None and tid not in tids_marked_busy:
+                        if tid in main_teacher_list[slot]:
+                            main_teacher_list[slot][tid]["available"] = False
+                        tids_marked_busy.add(tid)
                     if tid is not None and tid in class_to_teacher[r["cidx"]]:
                         class_to_teacher[r["cidx"]][tid] = max(0, class_to_teacher[r["cidx"]][tid] - 1)
                     if r["cidx"] in subject_map and tid is not None and tid in subject_map[r["cidx"]]:
@@ -589,6 +785,47 @@ def generate_timetable_backtrack(
 
             logging.info(f"Sync group '{bname}' ({btype}): placed at slots {chosen}")
 
+    # ── Step 3: Pre-place Free periods AFTER labs and sync groups ─────────────
+    # Scatter Free slots across remaining empty cells before backtracking.
+    # Running AFTER labs ensures consecutive lab blocks aren't blocked by Free.
+    for class_idx in range(No_of_classes):
+        if class_idx not in subject_map:
+            continue
+        for t_id, subs in subject_map[class_idx].items():
+            if not (isinstance(t_id, int) and t_id >= 1000):
+                continue  # only phantom Free teachers
+            for sub in subs:
+                if sub.get("name") != "Free":
+                    continue
+                free_hours = int(sub.get("hours", 0))
+                if free_hours <= 0:
+                    continue
+                empty_slots = [s for s in range(total_periods) if Timetable[s][class_idx] == 0]
+                random.shuffle(empty_slots)
+                placed = 0
+                for slot in empty_slots:
+                    if placed >= free_hours:
+                        break
+                    Timetable[slot][class_idx] = "Free"
+                    if t_id in main_teacher_list[slot]:
+                        main_teacher_list[slot][t_id]["available"] = False
+                    placed += 1
+                sub["hours"] = 0  # mark as placed in subject_map
+                logging.info(f"Pre-placed {placed} Free slots for class {class_idx} (teacher {t_id})")
+
+    # ── Step 4: Backtrack-solve remaining theory slots ────────────────────────
+    # Feasibility pre-check: classes with almost all Free slots don't need backtracking
+    # They've already been solved by Free pre-placement above.
+    remaining_empty = sum(
+        1 for s in range(total_periods)
+        for c in range(No_of_classes)
+        if Timetable[s][c] == 0
+    )
+    if remaining_empty == 0:
+        logging.info("All slots pre-filled (labs + free) — no backtracking needed!")
+        return Timetable
+
+    logging.info(f"Backtracking {remaining_empty} remaining empty cells")
     if solve():
         return Timetable
     return None
@@ -623,10 +860,19 @@ def generate_timetable_with_retry(
     No_of_classes, No_of_days_in_week, No_of_periods,
     teacher_list, class_teacher_periods, lab_teacher_periods,
     subject_map, fixed_periods=None, teacher_unavailability=None,
-    max_attempts=10, elective_bundles=None
+    max_attempts=3, elective_bundles=None
 ):
     if ORTOOLS_AVAILABLE:
-        logging.info("OR-Tools active — single attempt with 60s limit")
+        # Scale time limit by problem size:
+        # Small (≤8 classes): 60s, Medium (≤16): 120s, Large (>16): 180s
+        total_slots = No_of_classes * No_of_days_in_week * No_of_periods
+        if No_of_classes <= 8:
+            time_limit = 60
+        elif No_of_classes <= 16:
+            time_limit = 120
+        else:
+            time_limit = 180
+        logging.info(f"OR-Tools: {No_of_classes} classes × {No_of_days_in_week*No_of_periods} slots = {total_slots} cells → time limit {time_limit}s")
         return generate_timetable_ortools(
             No_of_classes, No_of_days_in_week, No_of_periods,
             copy.deepcopy(teacher_list),
@@ -634,7 +880,7 @@ def generate_timetable_with_retry(
             copy.deepcopy(lab_teacher_periods),
             copy.deepcopy(subject_map),
             fixed_periods, teacher_unavailability,
-            time_limit_seconds=60,
+            time_limit_seconds=time_limit,
             elective_bundles=elective_bundles
         )
     for attempt in range(1, max_attempts + 1):

@@ -6,92 +6,69 @@
     <title>Verify & Configure Schedule</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .container { max-width: 1300px; margin-top: 30px; padding-bottom: 50px; }
-        .table-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        
-        .config-section { background: #e9ecef; border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid #dee2e6; }
-        .slot-badge { font-size: 1.1rem; padding: 8px 15px; }
-
-        .editable { 
-            cursor: pointer; 
-            border-bottom: 2px solid #e9ecef; 
-            transition: all 0.2s; 
-            padding: 4px 8px;
-            border-radius: 4px;
-            display: inline-block;
-            width: 100%;
-        }
-        .editable:hover { background-color: #fff9db; border-bottom-color: #ffc107; }
-        .editable:focus { background-color: #fff; outline: 2px solid #0d6efd; border-bottom-color: transparent; }
-
-        /* Highlight invalid cells */
-        .editable.invalid { background-color: #fee2e2 !important; border-bottom-color: #dc3545 !important; outline: 2px solid #dc3545; }
-        
-        .class-cell { position: relative; min-width: 150px; }
-        .row-controls { 
-            position: absolute; 
-            right: 5px; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            display: none; 
-            flex-direction: column; 
-            gap: 2px;
-            z-index: 10;
-        }
-        .class-cell:hover .row-controls { display: flex; }
-        
-        .btn-add-inline { 
-            font-size: 9px; 
-            padding: 2px 6px; 
-            font-weight: bold;
-            background: white;
-            border: 1px solid #198754;
-            color: #198754;
-            text-transform: uppercase;
-        }
-        .btn-add-inline:hover { background: #198754; color: white; }
-
-        .lab-row { background-color: #fffdf5 !important; }
-        .btn-delete { color: #dc3545; border: none; background: none; font-size: 1.4rem; cursor: pointer; transition: 0.2s; }
-        .btn-delete:hover { transform: scale(1.2); color: #a71d2a; }
-        
-        .sticky-header { position: sticky; top: 0; z-index: 100; background: white; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-
-        .lab-inputs input { 
-            width: 75px !important; 
-            text-align: center; 
-            border: 1px solid #ced4da; 
-            font-weight: bold;
-        }
-        .input-group-label { font-size: 10px; color: #6c757d; text-transform: uppercase; margin-top: 2px; display: block; }
+        body{background:#f8f9fa;font-family:'Segoe UI',Tahoma,sans-serif;}
+        .container{max-width:1300px;margin-top:30px;padding-bottom:50px;}
+        .table-container{background:white;padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.05);}
+        .config-section{background:#e9ecef;border-radius:12px;padding:20px;margin-bottom:25px;border:1px solid #dee2e6;}
+        .slot-badge{font-size:1.1rem;padding:8px 15px;}
+        .editable{cursor:pointer;border-bottom:2px solid #e9ecef;transition:all .2s;padding:4px 8px;border-radius:4px;display:inline-block;width:100%;}
+        .editable:hover{background:#fff9db;border-bottom-color:#ffc107;}
+        .editable:focus{background:#fff;outline:2px solid #0d6efd;border-bottom-color:transparent;}
+        .editable.invalid{background:#fee2e2!important;border-bottom-color:#dc3545!important;outline:2px solid #dc3545;}
+        .class-cell{position:relative;min-width:150px;}
+        .row-controls{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:none;flex-direction:column;gap:2px;z-index:10;}
+        .class-cell:hover .row-controls{display:flex;}
+        .btn-add-inline{font-size:9px;padding:2px 6px;font-weight:bold;background:white;border:1px solid #198754;color:#198754;text-transform:uppercase;}
+        .btn-add-inline:hover{background:#198754;color:white;}
+        .lab-row{background:#fffdf5!important;}
+        .split-row{background:#f0f7ff!important;}
+        .btn-delete{color:#dc3545;border:none;background:none;font-size:1.4rem;cursor:pointer;transition:.2s;}
+        .btn-delete:hover{transform:scale(1.2);color:#a71d2a;}
+        .sticky-header{position:sticky;top:0;z-index:100;background:white;padding-bottom:10px;border-bottom:1px solid #eee;}
+        .lab-inputs input{width:75px!important;text-align:center;border:1px solid #ced4da;font-weight:bold;}
+        .input-group-label{font-size:10px;color:#6c757d;text-transform:uppercase;margin-top:2px;display:block;}
+        /* Split children */
+        .split-children-area{background:#dbeafe;border-radius:8px;padding:8px 10px;margin-top:6px;}
+        .split-child-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;background:white;border-radius:6px;padding:4px 8px;}
+        .split-child-row input{border:1px solid #ced4da;border-radius:4px;padding:3px 7px;font-size:.85rem;}
+        .split-child-row .sub-name{flex:1 1 160px;}
+        .split-child-row .sub-teacher{flex:1 1 140px;}
+        .split-child-row .rm-sub{background:none;border:none;color:#dc3545;font-size:1.1rem;cursor:pointer;}
+        .add-sub-btn{font-size:.78rem;padding:2px 10px;}
     </style>
 </head>
 <body>
-
 <div class="container table-container">
     <div class="sticky-header d-flex justify-content-between align-items-center mb-4">
-        <div>
+        <div style="flex:1;">
             <h2 class="mb-1 text-primary">📝 Data Verification</h2>
-            <p class="text-muted mb-0">Review extracted data and configure your school week structure.</p>
+            <p class="text-muted mb-1">Review extracted data and configure your school week structure.</p>
+            <div class="alert alert-info py-2 px-3 mb-0" style="font-size:.82rem;border-left:4px solid #0d6efd;">
+                <strong>💡 Split classes (2nd Language, Electives)?</strong>
+                Set Type → <strong>Split 🔀</strong> on the block row, name it (e.g. "2nd Language"), set hours, then add each sub-option (sans·bala, eng2·govi, tel·ravi). The block name appears on the timetable. On the next page, link the same block across classes into a sync group.
+            </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 ms-3">
             <button onclick="window.location.reload()" class="btn btn-outline-secondary">Reset All</button>
             <button onclick="saveChanges()" id="saveBtn" class="btn btn-success btn-lg px-5 shadow-sm">Generate Timetable</button>
         </div>
+    </div>
+
+    <div id="configWarningBanner" class="alert alert-warning d-flex align-items-start gap-2 mb-3" style="display:none!important;font-size:.87rem;">
+        <span style="font-size:1.2rem;">⚠️</span><span id="configWarningText"></span>
     </div>
 
     <div class="config-section row g-3 shadow-sm">
         <div class="col-md-3">
             <label class="form-label fw-bold text-dark">Working Days</label>
             <select id="global_days" class="form-select border-primary" onchange="updatePreview()">
-                <option value="5">5 Days (Mon-Fri)</option>
-                <option value="6" selected>6 Days (Mon-Sat)</option>
+                <option value="5" {% if extracted_days == 5 %}selected{% endif %}>5 Days (Mon-Fri)</option>
+                <option value="6" {% if extracted_days != 5 %}selected{% endif %}>6 Days (Mon-Sat)</option>
             </select>
         </div>
         <div class="col-md-3">
             <label class="form-label fw-bold text-dark">Periods per Day</label>
-            <input type="number" id="global_periods" class="form-control border-primary" value="6" min="1" max="12" oninput="updatePreview()">
+            <input type="number" id="global_periods" class="form-control border-primary" value="{{ extracted_periods }}" min="1" max="12" oninput="updatePreview()">
         </div>
         <div class="col-md-3">
             <label class="form-label fw-bold text-dark">Total Lab Rooms</label>
@@ -99,54 +76,44 @@
         </div>
         <div class="col-md-3 d-flex flex-column justify-content-center align-items-center">
             <span class="text-muted small text-uppercase fw-bold">Total Weekly Slots</span>
-            <span id="slot_preview" class="badge bg-primary slot-badge">36</span>
+            <span id="slot_preview" class="badge bg-primary slot-badge">{{ extracted_days * extracted_periods }}</span>
         </div>
     </div>
 
     <table class="table table-hover align-middle" id="dataTable">
         <thead class="table-dark">
             <tr>
-                <th>Class</th>
-                <th>Course Name</th>
-                <th>Faculty Name</th>
-                <th style="width: 130px;">Type</th>
-                <th class="text-center" style="width: 320px;">Hours Config (Total / Block / Room)</th>
-                <th style="width: 50px;"></th>
+                <th>Class</th><th>Block / Course Name</th><th>Faculty Name</th>
+                <th style="width:145px;">Type</th>
+                <th class="text-center" style="width:320px;">Hours Config</th>
+                <th style="width:50px;"></th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% for row in rows %}
-            <tr class="{{ 'lab-row' if row.type == 'Lab' else '' }}">
+            <tr class="{{ 'lab-row' if row.type == 'Lab' else ('split-row' if row.type == 'Split' else '') }}" data-split-children="[]">
                 <td class="class-cell">
                     <span contenteditable="true" class="editable">{{ row.class }}</span>
                     <div class="row-controls">
-                        <button onclick="insertRow(this, 'up')" class="btn btn-add-inline">↑ Add Up</button>
-                        <button onclick="insertRow(this, 'down')" class="btn btn-add-inline">↓ Add Down</button>
+                        <button onclick="insertRow(this,'up')" class="btn btn-add-inline">↑ Add Up</button>
+                        <button onclick="insertRow(this,'down')" class="btn btn-add-inline">↓ Add Down</button>
                     </div>
                 </td>
                 <td><span contenteditable="true" class="editable">{{ row.subject }}</span></td>
-                <td><span contenteditable="true" class="editable text-primary fw-bold">{{ row.teacher }}</span></td>
+                <td class="faculty-cell-td">{% if row.type != 'Split' %}<span contenteditable="true" class="editable text-primary fw-bold">{{ row.teacher }}</span>{% else %}<span class="text-muted" style="font-size:.8rem;font-style:italic;">— set in sub-rows →</span>{% endif %}</td>
                 <td>
                     <select class="form-select form-select-sm type-select" onchange="toggleType(this)">
-                        <option value="Theory" {% if row.type == 'Theory' %}selected{% endif %}>Theory</option>
-                        <option value="Lab" {% if row.type == 'Lab' %}selected{% endif %}>Lab</option>
+                        <option value="Theory" {% if row.type=='Theory' %}selected{% endif %}>Theory</option>
+                        <option value="Split"  {% if row.type=='Split'  %}selected{% endif %}>Split 🔀</option>
+                        <option value="Lab"    {% if row.type=='Lab'    %}selected{% endif %}>Lab</option>
                     </select>
                 </td>
                 <td class="hours-container text-center">
                     {% if row.type == 'Lab' %}
                     <div class="lab-inputs d-flex justify-content-center gap-2">
-                        <div>
-                            <input type="number" class="form-control form-control-sm total-hrs" value="{{ row.periods }}" oninput="this.value=this.value.replace(/\D/g,'')">
-                            <span class="input-group-label">Total</span>
-                        </div>
-                        <div>
-                            <input type="number" class="form-control form-control-sm cont-hrs" value="2" oninput="this.value=this.value.replace(/\D/g,'')">
-                            <span class="input-group-label">Block</span>
-                        </div>
-                        <div>
-                            <input type="number" class="form-control form-control-sm lab-no" value="1" oninput="this.value=this.value.replace(/\D/g,'')">
-                            <span class="input-group-label">Room</span>
-                        </div>
+                        <div><input type="number" class="form-control form-control-sm total-hrs" value="{{ row.periods }}"><span class="input-group-label">Total</span></div>
+                        <div><input type="number" class="form-control form-control-sm cont-hrs" value="2"><span class="input-group-label">Block</span></div>
+                        <div><input type="number" class="form-control form-control-sm lab-no" value="1"><span class="input-group-label">Room</span></div>
                     </div>
                     {% else %}
                     <div class="d-inline-block">
@@ -165,172 +132,217 @@
 </div>
 
 <script>
-    function updatePreview() {
-        const days = document.getElementById('global_days').value;
-        const periods = document.getElementById('global_periods').value;
-        document.getElementById('slot_preview').innerText = days * periods;
-    }
+// ── Split children helpers ────────────────────────────────────────────────────
+function getSplitChildren(tr){try{return JSON.parse(tr.dataset.splitChildren||'[]');}catch{return[];}}
+function setSplitChildren(tr,arr){tr.dataset.splitChildren=JSON.stringify(arr);}
+function escHtml(s){return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 
-    function sanitizeInt(element) {
-        let clean = element.innerText.replace(/\D/g, '');
-        if (element.innerText !== clean) {
-            element.innerText = clean;
-            const range = document.createRange();
-            const sel = window.getSelection();
-            if (clean.length > 0) {
-                range.selectNodeContents(element);
-                range.collapse(false);
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-        }
-    }
+function renderSplitArea(tr){
+    const container=tr.querySelector('.hours-container');
+    const children=getSplitChildren(tr);
+    const hrs=tr.querySelector('.theory-hrs')?.innerText?.trim()||'3';
+    const childHtml=children.map((c,i)=>`
+        <div class="split-child-row">
+            <input class="sub-name" placeholder="Sub-subject (e.g. sans)" value="${escHtml(c.name)}"
+                   oninput="updateSplitChild(this.closest('tr'),${i},'name',this.value)">
+            <input class="sub-teacher" placeholder="Teacher name" value="${escHtml(c.teacher)}"
+                   oninput="updateSplitChild(this.closest('tr'),${i},'teacher',this.value)">
+            <button class="rm-sub" title="Remove" onclick="removeSplitChild(this.closest('tr'),${i})">✕</button>
+        </div>`).join('');
+    container.innerHTML=`
+        <div class="d-inline-block mb-1">
+            <span contenteditable="true" class="editable fw-bold theory-hrs" oninput="sanitizeInt(this)">${hrs}</span>
+            <span class="input-group-label">Hours/week</span>
+        </div>
+        <div class="split-children-area">
+            <div class="fw-bold mb-1" style="font-size:.72rem;color:#1d4ed8;">SUB-OPTIONS (sub-name · teacher):</div>
+            ${childHtml||'<span class="text-muted" style="font-size:.78rem;">No sub-options yet</span>'}
+            <button class="btn btn-sm btn-outline-primary add-sub-btn mt-1" onclick="addSplitChild(this.closest('tr'))">+ Add option</button>
+        </div>`;
+}
 
-    function toggleType(select) {
-        const row = select.closest('tr');
-        const container = row.querySelector('.hours-container');
-        
-        if (select.value === 'Lab') {
-            row.classList.add('lab-row');
-            container.innerHTML = `
-                <div class="lab-inputs d-flex justify-content-center gap-2">
-                    <div><input type="number" class="form-control form-control-sm total-hrs" value="6" oninput="this.value=this.value.replace(/\\D/g,'')"><span class="input-group-label">Total</span></div>
-                    <div><input type="number" class="form-control form-control-sm cont-hrs" value="2" oninput="this.value=this.value.replace(/\\D/g,'')"><span class="input-group-label">Block</span></div>
-                    <div><input type="number" class="form-control form-control-sm lab-no" value="1" oninput="this.value=this.value.replace(/\\D/g,'')"><span class="input-group-label">Room</span></div>
-                </div>`;
+function addSplitChild(tr){
+    const children=getSplitChildren(tr);
+    children.push({name:'',teacher:''});
+    setSplitChildren(tr,children);
+    renderSplitArea(tr);
+    const inputs=tr.querySelectorAll('.sub-name');
+    if(inputs.length) inputs[inputs.length-1].focus();
+}
+function removeSplitChild(tr,idx){
+    const c=getSplitChildren(tr);c.splice(idx,1);setSplitChildren(tr,c);renderSplitArea(tr);
+}
+function updateSplitChild(tr,idx,field,val){
+    const c=getSplitChildren(tr);if(c[idx])c[idx][field]=val;setSplitChildren(tr,c);
+}
+
+function toggleType(select){
+    const row=select.closest('tr');
+    const container=row.querySelector('.hours-container');
+    const prevHrs=row.querySelector('.theory-hrs')?.innerText?.trim()||'3';
+    const facultyTd=row.querySelector('.faculty-cell-td');
+    if(select.value==='Lab'){
+        row.classList.remove('split-row');row.classList.add('lab-row');
+        // Restore faculty cell
+        if(facultyTd){facultyTd.innerHTML='<span contenteditable="true" class="editable text-primary fw-bold">Faculty Name</span>';}
+        container.innerHTML=`<div class="lab-inputs d-flex justify-content-center gap-2">
+            <div><input type="number" class="form-control form-control-sm total-hrs" value="6"><span class="input-group-label">Total</span></div>
+            <div><input type="number" class="form-control form-control-sm cont-hrs" value="2"><span class="input-group-label">Block</span></div>
+            <div><input type="number" class="form-control form-control-sm lab-no" value="1"><span class="input-group-label">Room</span></div>
+        </div>`;
+    } else if(select.value==='Split'){
+        row.classList.remove('lab-row');row.classList.add('split-row');
+        // Hide faculty cell — teachers are on sub-rows
+        if(facultyTd){facultyTd.innerHTML='<span class="text-muted" style="font-size:.8rem;font-style:italic;">— set in sub-rows →</span>';}
+        container.innerHTML=`<div class="d-inline-block mb-1">
+            <span contenteditable="true" class="editable fw-bold theory-hrs" oninput="sanitizeInt(this)">${prevHrs}</span>
+            <span class="input-group-label">Hours/week</span></div>
+            <div class="split-children-area">
+                <div class="fw-bold mb-1" style="font-size:.72rem;color:#1d4ed8;">SUB-OPTIONS:</div>
+                <span class="text-muted" style="font-size:.78rem;">No sub-options yet</span>
+                <button class="btn btn-sm btn-outline-primary add-sub-btn mt-1" onclick="addSplitChild(this.closest('tr'))">+ Add option</button>
+            </div>`;
+        if(!getSplitChildren(row).length) setSplitChildren(row,[]);
+    } else {
+        row.classList.remove('lab-row','split-row');
+        // Restore faculty cell
+        if(facultyTd){facultyTd.innerHTML='<span contenteditable="true" class="editable text-primary fw-bold">Faculty Name</span>';}
+        container.innerHTML=`<div class="d-inline-block">
+            <span contenteditable="true" class="editable fw-bold theory-hrs" oninput="sanitizeInt(this)">${prevHrs}</span>
+            <span class="input-group-label">Total Hours</span></div>`;
+    }
+}
+
+function insertRow(button,direction){
+    const currentRow=button.closest('tr');
+    const parentTable=currentRow.parentNode;
+    const currentClass=currentRow.querySelector('.class-cell .editable').innerText;
+    const newRow=document.createElement('tr');
+    newRow.dataset.splitChildren='[]';
+    newRow.innerHTML=`
+        <td class="class-cell">
+            <span contenteditable="true" class="editable">${currentClass}</span>
+            <div class="row-controls">
+                <button onclick="insertRow(this,'up')" class="btn btn-add-inline">↑ Add Up</button>
+                <button onclick="insertRow(this,'down')" class="btn btn-add-inline">↓ Add Down</button>
+            </div>
+        </td>
+        <td><span contenteditable="true" class="editable">New Subject</span></td>
+        <td class="faculty-cell-td"><span contenteditable="true" class="editable text-primary fw-bold faculty-cell">Faculty Name</span></td>
+        <td>
+            <select class="form-select form-select-sm type-select" onchange="toggleType(this)">
+                <option value="Theory" selected>Theory</option>
+                <option value="Split">Split 🔀</option>
+                <option value="Lab">Lab</option>
+            </select>
+        </td>
+        <td class="hours-container text-center">
+            <div class="d-inline-block">
+                <span contenteditable="true" class="editable fw-bold theory-hrs" oninput="sanitizeInt(this)">3</span>
+                <span class="input-group-label">Total Hours</span>
+            </div>
+        </td>
+        <td class="text-center"><button onclick="this.closest('tr').remove()" class="btn-delete">&times;</button></td>`;
+    direction==='up'?parentTable.insertBefore(newRow,currentRow):parentTable.insertBefore(newRow,currentRow.nextSibling);
+    const fc=newRow.querySelector('.faculty-cell');
+    fc.classList.add('invalid');
+    fc.addEventListener('input',function(){this.classList.toggle('invalid',!this.innerText.trim().length);});
+    setTimeout(()=>fc.focus(),50);
+}
+
+function sanitizeInt(el){
+    let c=el.innerText.replace(/\D/g,'');
+    if(el.innerText!==c){el.innerText=c;const r=document.createRange(),s=window.getSelection();if(c.length){r.selectNodeContents(el);r.collapse(false);s.removeAllRanges();s.addRange(r);}}
+}
+
+function updatePreview(){
+    const d=document.getElementById('global_days').value,p=document.getElementById('global_periods').value;
+    document.getElementById('slot_preview').innerText=d*p;
+    checkConfigWarning(parseInt(d),parseInt(p));
+}
+function checkConfigWarning(days,periods){
+    const banner=document.getElementById('configWarningBanner'),txt=document.getElementById('configWarningText');
+    const w=[];
+    if(days*periods<24)w.push(`Only ${days*periods} slots/week — check Days (${days}) and Periods (${periods}).`);
+    if(periods<6)w.push(`Periods/day is ${periods} — update if your school runs more.`);
+    if(w.length){txt.innerHTML=w.join('<br>');banner.style.display='flex';}else banner.style.display='none';
+}
+window.addEventListener('DOMContentLoaded',()=>{
+    checkConfigWarning(parseInt(document.getElementById('global_days').value),parseInt(document.getElementById('global_periods').value));
+});
+
+async function saveChanges(){
+    const btn=document.getElementById('saveBtn'),orig=btn.innerHTML;
+    const globalConfig={
+        days:parseInt(document.getElementById('global_days').value),
+        periods:parseInt(document.getElementById('global_periods').value),
+        labs:parseInt(document.getElementById('global_labs').value)
+    };
+    const tableData=[],splitGroups=[];
+    let invalidCells=[];
+
+    document.querySelectorAll('#tableBody tr').forEach(row=>{
+        const type=row.querySelector('.type-select').value;
+        const cls=row.cells[0].innerText.trim();
+        const subject=row.cells[1].innerText.trim();
+        const teacherEl=row.cells[2].querySelector('.editable');
+        const teacher=teacherEl?teacherEl.innerText.trim():row.cells[2].innerText.trim();
+        let p=3,c=1,l=0;
+
+        if(type==='Lab'){
+            p=parseInt(row.querySelector('.total-hrs')?.value)||0;
+            c=parseInt(row.querySelector('.cont-hrs')?.value)||1;
+            l=parseInt(row.querySelector('.lab-no')?.value)||1;
         } else {
-            row.classList.remove('lab-row');
-            container.innerHTML = `
-                <div class="d-inline-block">
-                    <span contenteditable="true" class="editable fw-bold theory-hrs" oninput="sanitizeInt(this)">3</span>
-                    <span class="input-group-label">Total Hours</span>
-                </div>`;
+            p=parseInt(row.querySelector('.theory-hrs')?.innerText?.replace(/\D/g,''))||0;
         }
-    }
 
-    function insertRow(button, direction) {
-        const currentRow = button.closest('tr');
-        const parentTable = currentRow.parentNode;
-        const currentClass = currentRow.querySelector('.class-cell .editable').innerText;
-        
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td class="class-cell">
-                <span contenteditable="true" class="editable">${currentClass}</span>
-                <div class="row-controls">
-                    <button onclick="insertRow(this, 'up')" class="btn btn-add-inline">↑ Add Up</button>
-                    <button onclick="insertRow(this, 'down')" class="btn btn-add-inline">↓ Add Down</button>
-                </div>
-            </td>
-            <td><span contenteditable="true" class="editable">New Subject</span></td>
-            <td><span contenteditable="true" class="editable text-primary fw-bold faculty-cell" placeholder="Enter faculty name">Faculty Name</span></td>
-            <td>
-                <select class="form-select form-select-sm type-select" onchange="toggleType(this)">
-                    <option value="Theory" selected>Theory</option>
-                    <option value="Lab">Lab</option>
-                </select>
-            </td>
-            <td class="hours-container text-center">
-                <div class="d-inline-block">
-                    <span contenteditable="true" class="editable fw-bold theory-hrs" oninput="sanitizeInt(this)">3</span>
-                    <span class="input-group-label">Total Hours</span>
-                </div>
-            </td>
-            <td class="text-center"><button onclick="this.closest('tr').remove()" class="btn-delete">&times;</button></td>
-        `;
-        direction === 'up'
-            ? parentTable.insertBefore(newRow, currentRow)
-            : parentTable.insertBefore(newRow, currentRow.nextSibling);
-
-        // Auto-focus the faculty cell so user knows to fill it
-        const facultyCell = newRow.querySelector('.faculty-cell');
-        facultyCell.classList.add('invalid');
-        facultyCell.addEventListener('input', function() {
-            if (this.innerText.trim().length > 0) this.classList.remove('invalid');
-            else this.classList.add('invalid');
-        });
-        setTimeout(() => facultyCell.focus(), 50);
-    }
-
-    async function saveChanges() {
-        const btn = document.getElementById("saveBtn");
-        const originalText = btn.innerHTML;
-        
-        const globalConfig = {
-            days: parseInt(document.getElementById("global_days").value),
-            periods: parseInt(document.getElementById("global_periods").value),
-            labs: parseInt(document.getElementById("global_labs").value)
-        };
-
-        const tableData = [];
-        let invalidCells = [];
-
-        document.querySelectorAll("#tableBody tr").forEach(row => {
-            const type = row.querySelector(".type-select").value;
-            let p, c, l;
-
-            if (type === 'Lab') {
-                p = parseInt(row.querySelector('.total-hrs').value) || 0;
-                c = parseInt(row.querySelector('.cont-hrs').value) || 1;
-                l = parseInt(row.querySelector('.lab-no').value) || 1;
-            } else {
-                let rawText = row.querySelector('.theory-hrs').innerText.replace(/\D/g, '');
-                p = parseInt(rawText) || 0;
-                c = 1;
-                l = 0;
+        if(type==='Split'){
+            const children=getSplitChildren(row);
+            if(children.length<2){
+                const area=row.querySelector('.split-children-area');
+                if(area){area.style.outline='2px solid #dc3545';invalidCells.push(area);}
+                return;
             }
-
-            const teacherEl = row.cells[2].querySelector('.editable');
-            const teacher   = teacherEl ? teacherEl.innerText.trim() : row.cells[2].innerText.trim();
-
-            // Validate: must be non-empty and not the placeholder
-            const isInvalid = !teacher || teacher === 'Faculty Name';
-            if (isInvalid) {
-                if (teacherEl) teacherEl.classList.add('invalid');
-                invalidCells.push(teacherEl);
-            } else {
-                if (teacherEl) teacherEl.classList.remove('invalid');
-            }
-
-            tableData.push({
-                class:      row.cells[0].innerText.trim(),
-                subject:    row.cells[1].innerText.trim(),
-                teacher:    teacher,
-                type:       type,
-                periods:    p,
-                continuous: c,
-                lab_no:     l
+            let hasErr=false;
+            children.forEach(child=>{
+                if(!child.name.trim()||!child.teacher.trim()){hasErr=true;}
+                else {
+                    tableData.push({
+                        class:cls, subject:child.name.trim(), teacher:child.teacher.trim(),
+                        type:'theory', periods:p, continuous:1, lab_no:0,
+                        split_block:subject, split_hours:p
+                    });
+                }
             });
-        });
-
-        if (invalidCells.length > 0) {
-            invalidCells[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            invalidCells[0].focus();
+            if(hasErr) invalidCells.push(null);
+            splitGroups.push({blockName:subject,className:cls,hours:p,children:children.map(c=>({name:c.name.trim(),teacher:c.teacher.trim()}))});
             return;
         }
 
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Solving...`;
+        const isInvalid=!teacher||teacher==='Faculty Name';
+        if(isInvalid){if(teacherEl)teacherEl.classList.add('invalid');invalidCells.push(teacherEl);}
+        else if(teacherEl)teacherEl.classList.remove('invalid');
+        tableData.push({class:cls,subject,teacher,type,periods:p,continuous:c,lab_no:l});
+    });
 
-        try {
-            const response = await fetch('/update-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ config: globalConfig, table_data: tableData })
-            });
-            const result = await response.json();
-            if (result.status === 'success') window.location.href = result.redirect;
-            else {
-                alert("❌ Solver Error: " + result.message);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        } catch (err) {
-            alert("❌ Connection failed.");
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
+    if(invalidCells.length>0){
+        const first=invalidCells.find(e=>e);
+        if(first){first.scrollIntoView({behavior:'smooth',block:'center'});first.focus?.();}
+        alert('Please fill in all required fields before continuing.');
+        return;
     }
+
+    btn.disabled=true;
+    btn.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Saving...`;
+    try{
+        const res=await fetch('/update-data',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({config:globalConfig,table_data:tableData,split_groups:splitGroups})});
+        const result=await res.json();
+        if(result.status==='success')window.location.href=result.redirect;
+        else{alert('❌ Error: '+result.message);btn.disabled=false;btn.innerHTML=orig;}
+    }catch(err){alert('❌ Connection failed.');btn.disabled=false;btn.innerHTML=orig;}
+}
 </script>
 </body>
 </html>
