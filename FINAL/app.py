@@ -88,7 +88,8 @@ def generate():
                     "subject": subj,
                     "teacher": teacher_map.get(t_id, {}).get('Name', f"S{t_id}"),
                     "type": "Theory",
-                    "periods": p_val
+                    "periods": p_val,
+                    "split_children_json": "[]"
                 })
 
         # 2. Process Labs (Now a LIST, not a DICT)
@@ -105,7 +106,8 @@ def generate():
                     "subject": subj,
                     "teacher": teacher_map.get(t_id, {}).get('Name', f"S{t_id}"),
                     "type": "Lab",
-                    "periods": p_count
+                    "periods": p_count,
+                    "split_children_json": "[]"
                 })
 
         # Extract days/periods from the PDF data if the extractor provided them
@@ -114,7 +116,8 @@ def generate():
 
         return render_template("view_simple.html", rows=display_data,
                                extracted_days=extracted_days,
-                               extracted_periods=extracted_periods)
+                               extracted_periods=extracted_periods,
+                               merge_groups_json="[]")
 
     except Exception as e:
         import traceback
@@ -519,8 +522,20 @@ def success_summary():
     # Sync groups intentionally place the same teacher in multiple classes at
     # the same slot. Build (tname, slot_idx) pairs to skip in conflict detection.
     sync_exempt = set()   # {(teacher_name, slot_idx), ...}
+    # Re-stamp auto_bundle classIdx using className before using them
+    # (saved bundles can have stale indices; this ensures correct class matching)
+    _ck = list(stored.get('organized', {}).keys())
+    _fixed_abs = []
+    for _ab in stored.get('auto_bundles', []):
+        _fm = []
+        for _m in _ab.get('members', []):
+            _cn = _m.get('className', '').replace('Class ', '').strip()
+            try: _idx = _ck.index(_cn)
+            except ValueError: _idx = _m.get('classIdx', -1)
+            _mf = dict(_m); _mf['classIdx'] = _idx; _fm.append(_mf)
+        _fab = dict(_ab); _fab['members'] = _fm; _fixed_abs.append(_fab)
     # Include both UI-created sync_groups and auto-built bundles from Split rows
-    sync_groups_stored = stored.get('sync_groups', []) + stored.get('auto_bundles', [])
+    sync_groups_stored = stored.get('sync_groups', []) + _fixed_abs
     for sg in sync_groups_stored:
         members = sg.get('members', [])
         if not members:
@@ -707,17 +722,131 @@ def update_data():
             else:
                 logging.info(f"Auto-bundle '{block_name}': fewer than 2 sub-options — skipping.")
 
+        merge_groups = incoming_payload.get('merge_groups', [])
+
         session_data = {
             "organized":      organized_classes,
             "days":           int(config.get('days', 6)),
             "periods":        int(config.get('periods', 6)),
             "session_token":  str(__import__('uuid').uuid4()),
-            "auto_bundles":   auto_bundles,   # persisted so fixed_setup can show them
+            "auto_bundles":   auto_bundles,
+            "merge_groups":   merge_groups,
         }
         with open("temp_web_data.json", "w") as f:
             json.dump(session_data, f)
 
         return jsonify({"status": "success", "redirect": url_for('setup_fixed')})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+
+# ── Load Verify (restore to verify/configure page) ────────────────────────────
+@app.route("/load-verify", methods=["POST"])
+def load_verify():
+    """
+    Stores a verify-page session (rows + days + periods + merge_groups)
+    so /edit-schedule can render view_simple.html pre-populated.
+    Called by:
+      - upload page "Load Saved Data" (v2 saves with page='verify')
+      - upload page "Enter Manually" (after class names, before subjects)
+    """
+    try:
+        payload      = request.get_json()
+        rows         = payload.get("rows", [])
+        days         = int(payload.get("days", 6))
+        periods      = int(payload.get("periods", 6))
+        labs         = int(payload.get("labs", 2))
+        merge_groups = payload.get("merge_groups", [])
+        twd          = payload.get("temp_web_data")  # may be None for manual entry
+
+        verify_session = {
+            "rows":         rows,
+            "days":         days,
+            "periods":      periods,
+            "labs":         labs,
+            "merge_groups": merge_groups,
+            "temp_web_data": twd,
+        }
+        with open("verify_session.json", "w") as f:
+            json.dump(verify_session, f)
+
+        return jsonify({"status": "success", "redirect": url_for("edit_schedule")})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ── Edit Schedule (verify page pre-populated from saved/manual data) ──────────
+@app.route("/edit-schedule")
+def edit_schedule():
+    """
+    Renders view_simple.html pre-populated from verify_session.json.
+    This is used when the user loads a saved file or enters manually.
+    The rows already include split_children so splits are shown correctly.
+    """
+    if not os.path.exists("verify_session.json"):
+        return redirect(url_for("home"))
+
+    with open("verify_session.json", "r") as f:
+        vs = json.load(f)
+
+    rows         = vs.get("rows", [])
+    days         = int(vs.get("days", 6))
+    periods      = int(vs.get("periods", 6))
+    merge_groups = vs.get("merge_groups", [])
+
+    import json as _json
+
+    # Attach split_children_json to each row so the Jinja template can embed it
+    for row in rows:
+        children = row.get("split_children", [])
+        row["split_children_json"] = _json.dumps(children)
+        # Normalise type capitalisation
+        t = str(row.get("type", "Theory"))
+        row["type"] = t[0].upper() + t[1:].lower() if t else "Theory"
+        # Remove "Class " prefix from class name if the user typed it already
+        cn = row.get("class", "")
+        if not cn.startswith("Class "):
+            row["class"] = "Class " + cn
+
+    return render_template(
+        "view_simple.html",
+        rows=rows,
+        extracted_days=days,
+        extracted_periods=periods,
+        merge_groups_json=_json.dumps(merge_groups),
+    )
+
+
+# ── Load Save File ────────────────────────────────────────────────────────────
+@app.route("/load-save", methods=["POST"])
+def load_save():
+    """
+    Receives the temp_web_data blob from a downloaded save file,
+    writes it to temp_web_data.json (same as /update-data does),
+    and returns a new session_token so fixed_setup can match localStorage.
+    """
+    try:
+        payload       = request.get_json()
+        temp_web_data = payload.get("temp_web_data")
+        if not temp_web_data:
+            return jsonify({"status": "error", "message": "No temp_web_data in payload"}), 400
+
+        # Issue a fresh session token — client will write this into localStorage
+        # so fixed_setup.html trusts and loads the restored session data.
+        import uuid
+        new_token = str(uuid.uuid4())
+        temp_web_data["session_token"] = new_token
+
+        with open("temp_web_data.json", "w") as f:
+            json.dump(temp_web_data, f)
+
+        return jsonify({
+            "status":        "success",
+            "session_token": new_token,
+            "redirect":      url_for("setup_fixed")
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -732,17 +861,43 @@ def setup_fixed():
         stored = json.load(f)
     
     # Defensive: always provide periods
-    periods_value = stored.get('periods', 8)          # fallback to 8 if missing
+    periods_value = stored.get('periods', 8)
     if not isinstance(periods_value, (int, float)):
         periods_value = 8
-    
+
+    # ── Re-stamp classIdx in auto_bundles using className ────────────────────
+    # Saved bundles can have stale indices if class order differs from current
+    # organized dict. Fix here so fixed_setup.html gets correct indices and
+    # validateBeforeSolve doesn't block generation with false stale-index errors.
+    class_keys_ordered = list(stored.get('organized', {}).keys())
+    fixed_bundles = []
+    for ab in stored.get('auto_bundles', []):
+        fixed_members = []
+        for m in ab.get('members', []):
+            m_cn = m.get('className', '').replace('Class ', '').strip()
+            try:
+                fresh_idx = class_keys_ordered.index(m_cn)
+            except ValueError:
+                fresh_idx = m.get('classIdx', -1)  # keep as-is if not found
+            fixed_m = dict(m)
+            fixed_m['classIdx'] = fresh_idx
+            fixed_members.append(fixed_m)
+        fixed_ab = dict(ab)
+        fixed_ab['members'] = fixed_members
+        fixed_bundles.append(fixed_ab)
+    # Also write back fixed bundles so run-final-solver gets clean data
+    stored['auto_bundles'] = fixed_bundles
+    with open("temp_web_data.json", "w") as f:
+        json.dump(stored, f)
+
     return render_template(
         "fixed_setup.html",
         days=stored.get('days', 6),
         periods=periods_value,
         class_data=stored.get('organized', {}),
         session_token=stored.get('session_token', 'default'),
-        auto_bundles=stored.get('auto_bundles', [])
+        auto_bundles=fixed_bundles,
+        temp_web_data=stored
     )
 @app.route("/run-final-solver", methods=["POST"])
 def run_final_solver():
@@ -762,11 +917,75 @@ def run_final_solver():
         # user-provided bundles from the sync group UI. User bundles take priority
         # (they override by name if the same blockName was also auto-built).
         auto_bundles = stored.get('auto_bundles', [])
+        class_keys_for_bundles = list(stored.get('organized', {}).keys())
         if auto_bundles:
             existing_names = {b.get('name') for b in elective_bundles}
             for ab in auto_bundles:
                 if ab.get('name') not in existing_names:
-                    elective_bundles.append(ab)
+                    # Re-stamp classIdx from current class_keys using className
+                    # (saved indices can be stale if class order changed)
+                    fixed_members = []
+                    for m in ab.get('members', []):
+                        m_cn = m.get('className', '').replace('Class ', '').strip()
+                        try:
+                            fresh_idx = class_keys_for_bundles.index(m_cn)
+                            m_fixed = dict(m)
+                            m_fixed['classIdx'] = fresh_idx
+                            fixed_members.append(m_fixed)
+                        except ValueError:
+                            fixed_members.append(m)  # keep as-is if not found
+                    ab_fixed = dict(ab)
+                    ab_fixed['members'] = fixed_members
+                    elective_bundles.append(ab_fixed)
+
+        # ── Convert merge_groups from verify page into extra elective_bundles ──
+        # merge_groups = [{name, entries:[{className, blockName}]}]
+        # Each merge group forces all its listed split blocks to share the same
+        # K time slots, regardless of which class they belong to.
+        merge_groups_stored = stored.get('merge_groups', [])
+        class_keys = list(stored.get('organized', {}).keys())
+        for mg in merge_groups_stored:
+            mg_name = mg.get('name', 'Merge')
+            entries = mg.get('entries', [])
+            if len(entries) < 2:
+                continue
+            # Collect all sub-option members across all listed classes
+            # Each entry: {className, blockName}  →  look up auto_bundle for that blockName
+            mg_members = []
+            mg_hours   = None
+            existing_bundle_names = {b.get('name') for b in auto_bundles}
+            for entry in entries:
+                cn = entry.get('className', '').replace('Class ', '').strip()
+                bn = entry.get('blockName', '').strip()
+                # Find this class's index
+                try:
+                    cidx = class_keys.index(cn)
+                except ValueError:
+                    continue
+                # Find the matching auto_bundle members for this class+blockName
+                # Use className (reliable) not classIdx (can be stale from old saves)
+                for ab in auto_bundles:
+                    if ab.get('name') == bn:
+                        for m in ab.get('members', []):
+                            m_cn = m.get('className', '').replace('Class ', '').strip()
+                            if m_cn == cn:
+                                # Re-stamp classIdx from current class_keys so solver sees correct index
+                                m_fixed = dict(m)
+                                m_fixed['classIdx'] = cidx
+                                mg_members.append(m_fixed)
+                                if mg_hours is None:
+                                    mg_hours = ab.get('periodsPerWeek', 3)
+            if len({m.get('classIdx') for m in mg_members}) >= 2 and mg_members:
+                # Only add if not already an auto_bundle with the same name
+                if mg_name not in {b.get('name') for b in elective_bundles}:
+                    elective_bundles.append({
+                        'name':           mg_name,
+                        'type':           'merged',
+                        'periodsPerWeek': mg_hours or 3,
+                        'members':        mg_members,
+                    })
+                    logging.info(f"Merge group '{mg_name}': {len(mg_members)} members across "
+                                 f"{len({m['classIdx'] for m in mg_members})} classes")
 
         from adapter import build_final_inputs 
         

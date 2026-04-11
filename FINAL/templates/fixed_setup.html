@@ -304,8 +304,11 @@
                     <button id="redoBtn" onclick="redoFixed()" disabled title="Redo (Ctrl+Y)">↪ Redo</button>
                 </div>
             </div>
-            <div class="col-md-2 text-end">
-                <button id="genBtn" onclick="runSolver()" class="btn btn-success btn-lg w-100">
+            <div class="col-md-2 d-flex gap-2 justify-content-end">
+                <button onclick="downloadSaveFile()" class="btn btn-outline-secondary btn-lg" title="Download save file to resume later">
+                    💾 Save
+                </button>
+                <button id="genBtn" onclick="runSolver()" class="btn btn-success btn-lg flex-grow-1">
                     ⚡ Generate
                 </button>
             </div>
@@ -597,8 +600,11 @@
 // ══════════════════════════════════════════════════════════════════════════════
 //  DATA
 // ══════════════════════════════════════════════════════════════════════════════
-const classInfo = JSON.parse('{{ class_data | tojson | safe }}');
+const classInfo = JSON.parse(document.getElementById('__class_info__').textContent);
 const classKeys = Object.keys(classInfo);
+
+// Full server-side data snapshot — used by downloadSaveFile()
+const TEMP_WEB_DATA = JSON.parse(document.getElementById('__temp_web_data__').textContent);
 
 const periodsMeta = document.querySelector('meta[name="periods-count"]');
 let NUM_PERIODS = periodsMeta ? parseInt(periodsMeta.content, 10) : 8;
@@ -1482,7 +1488,7 @@ function renderGlobalSlotList() {
 let syncGroups = [];
 
 // Auto-bundles injected from split rows defined in Data Verification
-const AUTO_BUNDLES = {{ auto_bundles | tojson }};
+const AUTO_BUNDLES = JSON.parse(document.getElementById('__auto_bundles__').textContent);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -2137,7 +2143,7 @@ const SESSION_TOKEN = 'timetable_session_token';
 
 // Each page render gets a unique token from Flask (class names + count as fingerprint)
 // If token changes it means new data was uploaded — wipe old session automatically
-const CURRENT_TOKEN = "{{ session_token }}";
+const CURRENT_TOKEN = document.getElementById("__session_token__").textContent.trim();
 
 function saveSession() {
     try {
@@ -2242,6 +2248,37 @@ window.onload = function() {
     refreshUndoButtons();
 };
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  DOWNLOAD SAVE FILE
+// ══════════════════════════════════════════════════════════════════════════════
+function downloadSaveFile() {
+    // Make sure the latest state is written to localStorage first
+    saveSession();
+
+    const saveData = {
+        version:       1,
+        savedAt:       new Date().toISOString(),
+        temp_web_data: TEMP_WEB_DATA,
+        fixed_slots:   JSON.parse(localStorage.getItem('timetable_fixed_slots')  || '{}'),
+        unavail:       JSON.parse(localStorage.getItem('timetable_unavail')       || '{}'),
+        global_slots:  JSON.parse(localStorage.getItem('timetable_global_slots') || '[]'),
+        groups:        JSON.parse(localStorage.getItem('timetable_groups')        || '[]'),
+        sync_groups:   JSON.parse(localStorage.getItem('timetable_sync_groups')   || '[]'),
+    };
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const blob    = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
+    const url     = URL.createObjectURL(blob);
+    const a       = document.createElement('a');
+    a.href        = url;
+    a.download    = `timetable_save_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('💾 Save file downloaded! Use "Load Saved Data" on the upload page to restore.', 'success');
+}
+
 // Patch change handler to snapshot before each change & auto-save
 const _origChangeHandler = document.addEventListener;
 </script>
@@ -2250,5 +2287,9 @@ const _origChangeHandler = document.addEventListener;
 <!-- ── Toast panel for validation warnings ── -->
 <div class="toast-panel" id="toastPanel"></div>
 
+<span id="__session_token__" style="display:none">{{ session_token }}</span>
+<script type="application/json" id="__auto_bundles__">{{ auto_bundles | tojson }}</script>
+<script type="application/json" id="__temp_web_data__">{{ temp_web_data | tojson }}</script>
+<script type="application/json" id="__class_info__">{{ class_data | tojson }}</script>
 </body>
 </html>
