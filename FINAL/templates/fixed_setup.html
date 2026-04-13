@@ -596,6 +596,12 @@
 
 </div><!-- /container-fluid -->
 
+<!-- ── Server data for JS — must be before the main script block ── -->
+<span id="__session_token__" style="display:none">{{ session_token }}</span>
+<script type="application/json" id="__class_info__">{{ class_data | tojson }}</script>
+<script type="application/json" id="__auto_bundles__">{{ auto_bundles | tojson }}</script>
+<script type="application/json" id="__temp_web_data__">{{ temp_web_data | tojson }}</script>
+
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 //  DATA
@@ -2287,9 +2293,5 @@ const _origChangeHandler = document.addEventListener;
 <!-- ── Toast panel for validation warnings ── -->
 <div class="toast-panel" id="toastPanel"></div>
 
-<span id="__session_token__" style="display:none">{{ session_token }}</span>
-<script type="application/json" id="__auto_bundles__">{{ auto_bundles | tojson }}</script>
-<script type="application/json" id="__temp_web_data__">{{ temp_web_data | tojson }}</script>
-<script type="application/json" id="__class_info__">{{ class_data | tojson }}</script>
 </body>
 </html>

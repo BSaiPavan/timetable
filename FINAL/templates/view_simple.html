@@ -254,6 +254,9 @@
 
 </div><!-- /page-wrap -->
 
+<!-- ── Server data for JS — must be before the main script block ── -->
+<script type="application/json" id="__merge_groups__">{{ merge_groups_json | default('[]') | safe }}</script>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 //  SPLIT HELPERS
@@ -635,6 +638,5 @@ window.addEventListener('DOMContentLoaded', ()=>{
     );
 });
 </script>
-<script type="application/json" id="__merge_groups__">{{ merge_groups_json | default('[]') | safe }}</script>
 </body>
 </html>

@@ -83,8 +83,9 @@ def generate():
                 subj = item.get('subject', 'Theory')
                 p_val = item.get('periods', 0)
 
+                _cid = str(class_id).replace("Class ", "").strip()
                 display_data.append({
-                    "class": f"Class {class_id}",
+                    "class": f"Class {_cid}",
                     "subject": subj,
                     "teacher": teacher_map.get(t_id, {}).get('Name', f"S{t_id}"),
                     "type": "Theory",
@@ -101,8 +102,9 @@ def generate():
                 p_raw = item.get('periods', [0])
                 p_count = p_raw[0] if isinstance(p_raw, list) else p_raw
 
+                _cid2 = str(class_id).replace("Class ", "").strip()
                 display_data.append({
-                    "class": f"Class {class_id}",
+                    "class": f"Class {_cid2}",
                     "subject": subj,
                     "teacher": teacher_map.get(t_id, {}).get('Name', f"S{t_id}"),
                     "type": "Lab",
@@ -605,7 +607,9 @@ def success_summary():
 @app.route("/update-data", methods=["POST"])
 def update_data():
     try:
-        incoming_payload = request.get_json()
+        incoming_payload = request.get_json(force=True, silent=True)
+        if incoming_payload is None:
+            return jsonify({"status": "error", "message": "Invalid or empty JSON body"}), 400
         web_data     = incoming_payload.get('table_data', [])
         config       = incoming_payload.get('config', {})
         split_groups = incoming_payload.get('split_groups', [])  # NEW: from Split rows
@@ -753,7 +757,9 @@ def load_verify():
       - upload page "Enter Manually" (after class names, before subjects)
     """
     try:
-        payload      = request.get_json()
+        payload      = request.get_json(force=True, silent=True)
+        if payload is None:
+            return jsonify({"status": "error", "message": "Invalid JSON body"}), 400
         rows         = payload.get("rows", [])
         days         = int(payload.get("days", 6))
         periods      = int(payload.get("periods", 6))
