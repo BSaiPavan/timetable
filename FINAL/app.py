@@ -83,9 +83,8 @@ def generate():
                 subj = item.get('subject', 'Theory')
                 p_val = item.get('periods', 0)
 
-                _cid = str(class_id).replace("Class ", "").strip()
                 display_data.append({
-                    "class": f"Class {_cid}",
+                    "class": f"Class {class_id}",
                     "subject": subj,
                     "teacher": teacher_map.get(t_id, {}).get('Name', f"S{t_id}"),
                     "type": "Theory",
@@ -102,9 +101,8 @@ def generate():
                 p_raw = item.get('periods', [0])
                 p_count = p_raw[0] if isinstance(p_raw, list) else p_raw
 
-                _cid2 = str(class_id).replace("Class ", "").strip()
                 display_data.append({
-                    "class": f"Class {_cid2}",
+                    "class": f"Class {class_id}",
                     "subject": subj,
                     "teacher": teacher_map.get(t_id, {}).get('Name', f"S{t_id}"),
                     "type": "Lab",
@@ -507,9 +505,11 @@ def success_summary():
                     teacher_slot_map.setdefault(tname, []).append(f"{cidx}-{si}")
 
                 # Also register sub-teachers for split blocks (e.g. "II Language" → aa, bb)
-                # so they appear in the By Teacher view and are marked busy at these slots
+                # so they appear in the By Teacher view and are marked busy at these slots.
+                # Bundle names are now "BlockName|ClassName" — use display_name for cell match.
                 for bundle in (stored.get('auto_bundles', []) + stored.get('sync_groups', [])):
-                    bname_lower = bundle.get('name', '').lower().strip()
+                    bname_display = bundle.get('display_name', bundle.get('name', ''))
+                    bname_lower = bname_display.lower().strip()
                     if bname_lower in (cell_norm, cell_str.lower().strip()):
                         for m in bundle.get('members', []):
                             if int(m.get('classIdx', -1)) == cidx:
@@ -579,8 +579,9 @@ def success_summary():
     # Maps (cidx, subject_lower) -> bundle_name so the timetable can display
     # e.g. "2nd Language" instead of just "eng2" or "sans"
     sync_group_label_map = {}  # (cidx, subj_lower) -> bundle_display_name
+    # Use display_name (e.g. "Language") not internal name ("Language|MPC11") for timetable labels
     for sg in sync_groups_stored:  # already includes auto_bundles from above
-        bname = sg.get('name', '')
+        bname = sg.get('display_name', sg.get('name', ''))  # use display_name for timetable cells
         for m in sg.get('members', []):
             cidx_m = int(m.get('classIdx', -1))
             subj_m = (m.get('subject') or '').lower().strip()
@@ -607,9 +608,7 @@ def success_summary():
 @app.route("/update-data", methods=["POST"])
 def update_data():
     try:
-        incoming_payload = request.get_json(force=True, silent=True)
-        if incoming_payload is None:
-            return jsonify({"status": "error", "message": "Invalid or empty JSON body"}), 400
+        incoming_payload = request.get_json()
         web_data     = incoming_payload.get('table_data', [])
         config       = incoming_payload.get('config', {})
         split_groups = incoming_payload.get('split_groups', [])  # NEW: from Split rows
@@ -670,61 +669,54 @@ def update_data():
 
         # ── Auto-build elective_bundles from split_groups ─────────────────────
         # split_groups format: [{blockName, className, hours, children:[{name,teacher}]}]
-        # Group by blockName: same blockName across different classes → one bundle
-        from collections import defaultdict
-        block_classes = defaultdict(list)  # blockName -> [{ className, hours, children }]
-        for sg in split_groups:
-            block_classes[sg['blockName']].append(sg)
-
+        #
+        # KEY RULE: ONE bundle per CLASS per blockName.
+        # Cross-class grouping (forcing Language to same time slot across MPC11/BiPC11/CAE11)
+        # must be set up EXPLICITLY by the user on the next page (fixed_setup merge groups).
+        # We never auto-merge across classes just because they share the same block name —
+        # e.g. "Language" in Class 11 and "Language" in Class 12 are separate subjects
+        # taught by different teachers at different levels.
+        class_keys = list(organized_classes.keys())
         auto_bundles = []
-        for block_name, class_entries in block_classes.items():
-            if len(class_entries) < 1:
+        for sg in split_groups:
+            block_name = sg['blockName']
+            hours      = sg['hours']
+            cname      = sg['className'].replace('Class ', '').strip()
+            try:
+                cidx = class_keys.index(cname)
+            except ValueError:
                 continue
-            hours = class_entries[0]['hours']
+            children = sg.get('children', [])
+            if not children:
+                continue
             members = []
-            # Get class index for each className
-            class_keys = list(organized_classes.keys())
-            for ce in class_entries:
-                cname = ce['className'].replace('Class ', '').strip()
-                try:
-                    cidx = class_keys.index(cname)
-                except ValueError:
+            for child in children:
+                if not child.get('name') or not child.get('teacher'):
                     continue
-                for child in ce.get('children', []):
-                    if not child.get('name') or not child.get('teacher'):
-                        continue
-                    members.append({
-                        'classIdx':    cidx,
-                        'className':   cname,
-                        'subject':     child['name'],
-                        'teacherName': child['teacher'],
-                        'teacherId':   str(t_name_to_id.get(child['teacher'], 99)),
-                        'hours':       hours
-                    })
-            # Create a bundle for ANY split group with 2+ sub-options,
-            # even within a single class. The bundle forces all sub-subjects
-            # (e.g. 'a' and 'b') to occupy the SAME slots, so the timetable
-            # shows the block name ('II Language') not individual sub-subject names.
-            # Multi-class bundles additionally sync across classes.
-            if len(members) >= 2:
-                unique_cidxs = {m['classIdx'] for m in members}
-                # Rewrite each member's subject to the BLOCK NAME (e.g. 'II Language').
-                # The subject_map only has the block name — sub-option names (eng/sans)
-                # were collapsed into a single row and don't exist in subject_map.
-                # Keep sub_subject for reference/display only.
-                members_for_bundle = [
-                    {**m, 'subject': block_name, 'sub_subject': m.get('subject', '')}
-                    for m in members
-                ]
-                auto_bundles.append({
-                    'name':          block_name,
-                    'type':          'split',
-                    'periodsPerWeek': hours,
-                    'members':       members_for_bundle,
+                members.append({
+                    'classIdx':    cidx,
+                    'className':   cname,
+                    'subject':     block_name,   # block name in subject_map
+                    'sub_subject': child['name'],
+                    'teacherName': child['teacher'],
+                    'teacherId':   str(t_name_to_id.get(child['teacher'], 99)),
+                    'hours':       hours
                 })
-                logging.info(f"Auto-bundle '{block_name}': {len(members_for_bundle)} members across {len(unique_cidxs)} class(es)")
+            if len(members) >= 2:
+                # Bundle name is "BlockName|ClassName" to keep each class separate.
+                # The solver only forces the same K slots within this single class
+                # (single-class split path: sub-teachers marked busy at block slots).
+                bundle_name = f"{block_name}|{cname}"
+                auto_bundles.append({
+                    'name':           bundle_name,
+                    'display_name':   block_name,   # shown in timetable
+                    'type':           'split',
+                    'periodsPerWeek': hours,
+                    'members':        members,
+                })
+                logging.info(f"Auto-bundle '{bundle_name}': {len(members)} sub-options in class {cname}")
             else:
-                logging.info(f"Auto-bundle '{block_name}': fewer than 2 sub-options — skipping.")
+                logging.info(f"Auto-bundle for '{block_name}' in {cname}: fewer than 2 sub-options — skipping.")
 
         merge_groups = incoming_payload.get('merge_groups', [])
 
@@ -757,9 +749,7 @@ def load_verify():
       - upload page "Enter Manually" (after class names, before subjects)
     """
     try:
-        payload      = request.get_json(force=True, silent=True)
-        if payload is None:
-            return jsonify({"status": "error", "message": "Invalid JSON body"}), 400
+        payload      = request.get_json()
         rows         = payload.get("rows", [])
         days         = int(payload.get("days", 6))
         periods      = int(payload.get("periods", 6))
@@ -968,19 +958,23 @@ def run_final_solver():
                     cidx = class_keys.index(cn)
                 except ValueError:
                     continue
-                # Find the matching auto_bundle members for this class+blockName
-                # Use className (reliable) not classIdx (can be stale from old saves)
+                # Find the matching auto_bundle for this class+blockName.
+                # Bundle name is now "BlockName|ClassName" (e.g. "Language|MPC11")
+                # so match by both display_name/blockName and className.
                 for ab in auto_bundles:
-                    if ab.get('name') == bn:
-                        for m in ab.get('members', []):
-                            m_cn = m.get('className', '').replace('Class ', '').strip()
-                            if m_cn == cn:
-                                # Re-stamp classIdx from current class_keys so solver sees correct index
-                                m_fixed = dict(m)
-                                m_fixed['classIdx'] = cidx
-                                mg_members.append(m_fixed)
-                                if mg_hours is None:
-                                    mg_hours = ab.get('periodsPerWeek', 3)
+                    ab_display = ab.get('display_name', ab.get('name', ''))
+                    ab_matches_block = (ab_display == bn or ab.get('name') == f"{bn}|{cn}")
+                    if not ab_matches_block:
+                        continue
+                    for m in ab.get('members', []):
+                        m_cn = m.get('className', '').replace('Class ', '').strip()
+                        if m_cn == cn:
+                            # Re-stamp classIdx from current class_keys
+                            m_fixed = dict(m)
+                            m_fixed['classIdx'] = cidx
+                            mg_members.append(m_fixed)
+                            if mg_hours is None:
+                                mg_hours = ab.get('periodsPerWeek', 3)
             if len({m.get('classIdx') for m in mg_members}) >= 2 and mg_members:
                 # Only add if not already an auto_bundle with the same name
                 if mg_name not in {b.get('name') for b in elective_bundles}:

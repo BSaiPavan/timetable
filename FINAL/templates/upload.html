@@ -184,7 +184,10 @@ async function loadSavedFile() {
         return;
     }
 
-    if (!saveData.temp_web_data || !saveData.version) {
+    // Valid if: v1 save (has temp_web_data + version) OR v2 save (has rows + page='verify')
+    const isV1 = saveData.temp_web_data && saveData.version;
+    const isV2 = saveData.page === 'verify' && Array.isArray(saveData.rows) && saveData.version;
+    if (!isV1 && !isV2) {
         errEl.textContent = 'This file does not look like a valid timetable save file.';
         errEl.style.display = 'block';
         return;

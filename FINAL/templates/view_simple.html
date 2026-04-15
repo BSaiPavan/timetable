@@ -254,7 +254,7 @@
 
 </div><!-- /page-wrap -->
 
-<!-- ── Server data for JS — must be before the main script block ── -->
+<!-- Server data injected before script so getElementById works immediately -->
 <script type="application/json" id="__merge_groups__">{{ merge_groups_json | default('[]') | safe }}</script>
 
 <script>

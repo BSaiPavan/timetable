@@ -596,7 +596,7 @@
 
 </div><!-- /container-fluid -->
 
-<!-- ── Server data for JS — must be before the main script block ── -->
+<!-- Server data injected before script so getElementById works immediately -->
 <span id="__session_token__" style="display:none">{{ session_token }}</span>
 <script type="application/json" id="__class_info__">{{ class_data | tojson }}</script>
 <script type="application/json" id="__auto_bundles__">{{ auto_bundles | tojson }}</script>
